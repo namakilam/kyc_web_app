@@ -34,7 +34,7 @@ public class NetworkAPI {
     private static final String TEST_FIXTURES_PATH = "/home/ubuntu/workspace/src/github.com/hyperledger/fabric/examples/e2e_cli";
 
     private static final String CHAIN_CODE_NAME = "kyc_cc";
-    private static final String CHAIN_CODE_PATH = "github.com/hyperledger/fabric/examples/chaincode/go/KYC_CHAINCODE_GO";
+    private static final String CHAIN_CODE_PATH = "/kyc";
     private static final String CHAIN_CODE_VERSION = "1";
 
     private static final String CHANNEL_NAME = "mychannel";
@@ -165,7 +165,7 @@ public class NetworkAPI {
                 InstallProposalRequest installProposalRequest = client.newInstallProposalRequest();
                 installProposalRequest.setChaincodeID(chaincodeID);
 
-                installProposalRequest.setChaincodeSourceLocation(new File("/home/ubuntu/workspace/kyc"));
+                installProposalRequest.setChaincodeSourceLocation(new File("/home/ubuntu/workspace"));
 
 
                 installProposalRequest.setChaincodeVersion(CHAIN_CODE_VERSION);
