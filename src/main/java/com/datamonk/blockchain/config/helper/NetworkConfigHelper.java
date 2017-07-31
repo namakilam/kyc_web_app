@@ -27,8 +27,8 @@ public class NetworkConfigHelper {
 
         Config config = Config.getConfig();
 
-        // Set the private static variable Config.com.datamonk.blockchain.config = null
-        java.lang.reflect.Field configInstance = config.getClass().getDeclaredField("com/datamonk/blockchain/config");
+        // Set the private static variable Config.config = null
+        java.lang.reflect.Field configInstance = config.getClass().getDeclaredField("config");
         configInstance.setAccessible(true);
         configInstance.set(null, null);
 
@@ -56,7 +56,7 @@ public class NetworkConfigHelper {
 
         org.hyperledger.fabric_ca.sdk.helper.Config config = org.hyperledger.fabric_ca.sdk.helper.Config.getConfig();
 
-        // Set the private static variable Config.com.datamonk.blockchain.config = null
+        // Set the private static variable Config.config = null
         java.lang.reflect.Field configInstance = config.getClass().getDeclaredField("com/datamonk/blockchain/config");
         configInstance.setAccessible(true);
         configInstance.set(null, null);
@@ -71,7 +71,7 @@ public class NetworkConfigHelper {
 
     /**
      * customizeConfig() sets up the properties listed by env var CONFIG_OVERRIDES The value of the env var is
-     * <i>property1=value1,property2=value2</i> and so on where each <i>property</i> is a property from the SDK's com.datamonk.blockchain.config
+     * <i>property1=value1,property2=value2</i> and so on where each <i>property</i> is a property from the SDK's config
      * file.
      *
      * @throws NoSuchFieldException
