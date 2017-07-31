@@ -1,4 +1,4 @@
-package config;
+package com.datamonk.blockchain.config;
 
 import org.hyperledger.fabric.sdk.Peer;
 import org.hyperledger.fabric.sdk.User;

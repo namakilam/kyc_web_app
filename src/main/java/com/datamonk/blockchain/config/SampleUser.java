@@ -1,4 +1,4 @@
-package config;/*
+package com.datamonk.blockchain.config;/*
  *  Copyright 2016 DTCC, Fujitsu Australia Software Technology - All Rights Reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");

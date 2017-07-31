@@ -14,7 +14,7 @@
  *
  */
 
-package config;
+package com.datamonk.blockchain.config;
 
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;

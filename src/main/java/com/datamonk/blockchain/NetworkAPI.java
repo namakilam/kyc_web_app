@@ -1,22 +1,25 @@
-import config.NetworkConfig;
-import config.SampleOrg;
-import config.SampleStore;
-import config.SampleUser;
-import config.helper.NetworkConfigHelper;
+package com.datamonk.blockchain;
+
+import com.datamonk.blockchain.config.NetworkConfig;
+import com.datamonk.blockchain.config.SampleOrg;
+import com.datamonk.blockchain.config.SampleStore;
+import com.datamonk.blockchain.config.SampleUser;
+import com.datamonk.blockchain.config.helper.NetworkConfigHelper;
 import org.apache.commons.codec.binary.Hex;
 import org.hyperledger.fabric.sdk.*;
 import org.hyperledger.fabric.sdk.exception.TransactionEventException;
 import org.hyperledger.fabric.sdk.security.CryptoSuite;
 import org.hyperledger.fabric_ca.sdk.HFCAClient;
 import org.hyperledger.fabric_ca.sdk.RegistrationRequest;
-import config.Util;
+import com.datamonk.blockchain.config.Util;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static config.Util.out;
+import static com.datamonk.blockchain.config.Util.out;
+import static com.datamonk.blockchain.config.Util.out;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -499,12 +502,12 @@ public class NetworkAPI {
                 final String sampleOrgName = sampleOrg.getName();
                 final String sampleOrgDomainName = sampleOrg.getDomainName();
 
-                // src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/
+                // src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-com.datamonk.blockchain.config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/
 
                 SampleUser peerOrgAdmin = sampleStore.getMember(sampleOrgName + "Admin", sampleOrgName, sampleOrg.getMSPID(),
-                        Util.findFileSk(Paths.get(testConfig.getTestChannelPath(), "crypto-config/peerOrganizations/",
+                        Util.findFileSk(Paths.get(testConfig.getTestChannelPath(), "crypto-com.datamonk.blockchain.config/peerOrganizations/",
                                 sampleOrgDomainName, format("/users/Admin@%s/msp/keystore", sampleOrgDomainName)).toFile()),
-                        Paths.get(testConfig.getTestChannelPath(), "crypto-config/peerOrganizations/", sampleOrgDomainName,
+                        Paths.get(testConfig.getTestChannelPath(), "crypto-com.datamonk.blockchain.config/peerOrganizations/", sampleOrgDomainName,
                                 format("/users/Admin@%s/msp/signcerts/Admin@%s-cert.pem", sampleOrgDomainName, sampleOrgDomainName)).toFile());
 
                 sampleOrg.setPeerAdmin(peerOrgAdmin); //A special user that can create channels, join peers and install chaincode

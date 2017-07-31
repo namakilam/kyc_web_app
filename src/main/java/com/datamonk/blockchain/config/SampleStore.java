@@ -1,4 +1,4 @@
-package config;/*
+package com.datamonk.blockchain.config;/*
  *  Copyright 2016, 2017 DTCC, Fujitsu Australia Software Technology, IBM - All Rights Reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -100,13 +100,13 @@ public class SampleStore {
      */
     public SampleUser getMember(String name, String org) {
 
-        // Try to get the config.SampleUser state from the cache
+        // Try to get the com.datamonk.blockchain.config.SampleUser state from the cache
         SampleUser sampleUser = members.get(SampleUser.toKeyValStoreName(name, org));
         if (null != sampleUser) {
             return sampleUser;
         }
 
-        // Create the config.SampleUser and try to restore it's state from the key value store (if found).
+        // Create the com.datamonk.blockchain.config.SampleUser and try to restore it's state from the key value store (if found).
         sampleUser = new SampleUser(name, org, this);
 
         return sampleUser;
@@ -130,13 +130,13 @@ public class SampleStore {
                                 File certificateFile) throws IOException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeySpecException {
 
         try {
-            // Try to get the config.SampleUser state from the cache
+            // Try to get the com.datamonk.blockchain.config.SampleUser state from the cache
             SampleUser sampleUser = members.get(SampleUser.toKeyValStoreName(name, org));
             if (null != sampleUser) {
                 return sampleUser;
             }
 
-            // Create the config.SampleUser and try to restore it's state from the key value store (if found).
+            // Create the com.datamonk.blockchain.config.SampleUser and try to restore it's state from the key value store (if found).
             sampleUser = new SampleUser(name, org, this);
             sampleUser.setMspId(mspId);
 
