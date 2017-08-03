@@ -165,7 +165,9 @@ public class NetworkAPI {
                 InstallProposalRequest installProposalRequest = client.newInstallProposalRequest();
                 installProposalRequest.setChaincodeID(chaincodeID);
 
-                installProposalRequest.setChaincodeSourceLocation(new File("/home/ubuntu/workspace"));
+                installProposalRequest.setChaincodeInputStream(Util.generateTarGzInputStream(
+                        (Paths.get("/home/ubuntu/workspace", "src", CHAIN_CODE_PATH).toFile()),
+                        Paths.get("src", CHAIN_CODE_PATH).toString()));
 
 
                 installProposalRequest.setChaincodeVersion(CHAIN_CODE_VERSION);
