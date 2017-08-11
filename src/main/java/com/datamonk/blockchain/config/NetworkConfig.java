@@ -133,7 +133,7 @@ public class NetworkConfig {
                 sampleOrg.setCALocation(httpTLSify(sdkProperties.getProperty((INTEGRATIONTESTS_ORG + org.getKey() + ".ca_location"))));
 
                 if (runningFabricCATLS) {
-                    String cert = "/home/ubuntu/workspace/src/github.com/hyperledger/fabric/examples/e2e_cli/crypto-com.datamonk.blockchain.config/peerOrganizations/DNAME/ca/ca.DNAME-cert.pem".replaceAll("DNAME", domainName);
+                    String cert = "/Users/namakilam/workspace/go/src/github.com/hyperledger/fabric/examples/e2e_cli/crypto-config/peerOrganizations/DNAME/ca/ca.DNAME-cert.pem".replaceAll("DNAME", domainName);
                     File cf = new File(cert);
                     if (!cf.exists() || !cf.isFile()) {
                         throw new RuntimeException("TEST is missing cert file " + cf.getAbsolutePath());
@@ -261,7 +261,7 @@ public class NetworkConfig {
 
         final String domainName = getDomainName(name);
 
-        File cert = Paths.get(getTestChannelPath(), "crypto-com.datamonk.blockchain.config/ordererOrganizations".replace("orderer", type), domainName, type + "s",
+        File cert = Paths.get(getTestChannelPath(), "crypto-config/ordererOrganizations".replace("orderer", type), domainName, type + "s",
                 name, "tls/server.crt").toFile();
         if (!cert.exists()) {
             throw new RuntimeException(String.format("Missing cert file for: %s. Could not find at location: %s", name,
@@ -286,7 +286,7 @@ public class NetworkConfig {
 
     public String getTestChannelPath() {
 
-        return "/home/ubuntu/workspace/src/github.com/hyperledger/fabric/examples/e2e_cli";
+        return "/Users/namakilam/workspace/go/src/github.com/hyperledger/fabric/examples/e2e_cli";
 
     }
 

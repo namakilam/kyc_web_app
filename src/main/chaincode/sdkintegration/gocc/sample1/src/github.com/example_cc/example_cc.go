@@ -51,52 +51,12 @@ type Customer struct {
 
 // Init initializes the chaincode state
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("########### example_cc Init ###########")
-	_, args := stub.GetFunctionAndParameters()
-	var A, B string    // Entities
-	var Aval, Bval int // Asset holdings
-	var err error
-
-	if len(args) != 4 {
-		return shim.Error("Incorrect number of arguments. Expecting 4")
-	}
-
-	// Initialize the chaincode
-	A = args[0]
-	Aval, err = strconv.Atoi(args[1])
-	if err != nil {
-		return shim.Error("Expecting integer value for asset holding")
-	}
-	B = args[2]
-	Bval, err = strconv.Atoi(args[3])
-	if err != nil {
-		return shim.Error("Expecting integer value for asset holding")
-	}
-	fmt.Printf("Aval = %d, Bval = %d\n", Aval, Bval)
-
-	// Write the state to the ledger
-	err = stub.PutState(A, []byte(strconv.Itoa(Aval)))
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-
-	err = stub.PutState(B, []byte(strconv.Itoa(Bval)))
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-
-	if transientMap, err := stub.GetTransient(); err == nil {
-		if transientData, ok := transientMap["result"]; ok {
-			return shim.Success(transientData)
-		}
-	}
-	return shim.Success(nil)
-
+	return shim.Success([]byte("I.N.I.T SUCCESS"))
 }
 
 // Invoke makes payment of X units from A to B
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("########### example_cc Invoke ###########")
+	fmt.Println("########### KYC Chaincode Invoke ###########")
 	function, args := stub.GetFunctionAndParameters()
 
 	if function != "invoke" {
@@ -136,7 +96,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		// Deletes an entity from its state
 		return t.readHistoryFromLedger(stub, args)
 	}
-	return shim.Error("Unknown action, check the first argument, must be one of 'delete', 'query', or 'move'")
+	return shim.Error("Unknown action, check the first argument")
 }
 
 func (t *SimpleChaincode) move(stub shim.ChaincodeStubInterface, args []string) pb.Response {
