@@ -257,14 +257,18 @@ func (t *SimpleChaincode) readHistoryFromLedger(stub shim.ChaincodeStubInterface
 		return shim.Error(err.Error())
 	}
 
-	var history []string
+	var history []Customer
 
 	for historyItr.HasNext() {
 		alters, err := historyItr.Next()
 		if err != nil {
 			fmt.Println(err)
 		} else {
-			history =  append(history, string(alters.Value))
+			var customer Customer
+			err = json.Unmarshal(alters.Value, &customer)
+			if err == nil {
+				history =  append(history, customer)
+			}
 		}
 	}
 
@@ -272,6 +276,11 @@ func (t *SimpleChaincode) readHistoryFromLedger(stub shim.ChaincodeStubInterface
 	if err != nil {
 		return shim.Error(err.Error())
 	}
+
+	if len(val) == 0 {
+		return shim.Error(fmt.Sprintf("No Object With Key : %s present In the Ledger.", key))
+	}
+
 	return shim.Success(val)
 }
 
@@ -284,6 +293,10 @@ func (t *SimpleChaincode) readDataFromLedger(stub shim.ChaincodeStubInterface, a
 	customerInfo, err := stub.GetState(args[0])
 	if err != nil {
 		return shim.Error(err.Error())
+	}
+
+	if len(customerInfo) == 0 {
+		return shim.Error(fmt.Sprintf("No Object With Key : %s present In the Ledger.", args[0]))
 	}
 
 	return shim.Success(customerInfo)

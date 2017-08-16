@@ -21,6 +21,10 @@ public class RequestParams {
     @JsonProperty("CtorMsg")
     private CtorMsg ctorMsg;
 
+    public RequestParams() {
+
+    }
+
     public Integer getType() {
         return type;
     }

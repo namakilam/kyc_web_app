@@ -31,6 +31,6 @@ public enum AssetType {
 
     @JsonValue
     public String toValue() {
-        return this.name();
+        return this.name().toLowerCase();
     }
 }

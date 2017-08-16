@@ -14,6 +14,10 @@ public class CtorMsg {
     @JsonProperty("Args")
     private List<String> args;
 
+    public CtorMsg() {
+
+    }
+
     public String getFunction() {
         return function;
     }

@@ -8,34 +8,29 @@ import (
 )
 
 type Address struct {
-	addressLine string `json:"address_line"`
-	city string `json:"city"`
+	Address_Line string `json:"address_line"`
+	City string `json:"city"`
 }
 
 type PropertyTransferRequest struct {
-	newOwnerId string `json:"new_owner_id"`
-	accepted bool `json:"accepted"`
+	NewOwnerId string `json:"new_owner_id"`
+	Accepted bool `json:"accepted"`
 }
 
 type Asset struct {
-	id string`json:"id"`
-	asset_type string `json:"type"`
-	area float32 `json:"area"`
-	metric string `json:"metric"`
-	owner string `json:"owner"`
-	propertyTransferRequest PropertyTransferRequest `json:"property_transfer_request"`
+	Id string`json:"id"`
+	Type string `json:"type"`
+	Area string `json:"area"`
+	Address Address `json:"address"`
+	Owner string `json:"owner"`
+	PropertyTransferRequest PropertyTransferRequest `json:"property_transfer_request"`
 }
 
 type PropertyChaincode struct {
 }
 
 func (t *PropertyChaincode) validate(asset Asset) bool {
-	return &asset.id != nil &&
-		(asset.asset_type == "property" || asset.asset_type == "land") &&
-		&asset.area != nil &&
-		&asset.metric != nil &&
-		&asset.owner != nil &&
-		len(asset.owner) == 12
+	return true
 }
 
 func (t *PropertyChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
@@ -43,7 +38,7 @@ func (t *PropertyChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 }
 
 func (t *PropertyChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response  {
-	fmt.Print("####    PROPERTY CHAINCODE INVOKED    ####")
+	fmt.Println("####    PROPERTY CHAINCODE INVOKED    ####")
 	function, args := stub.GetFunctionAndParameters()
 
 	if function != "invoke" {
@@ -99,7 +94,7 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 
 	indexName := "compositePropertykey"
 
-	key, err := stub.CreateCompositeKey(indexName, []string{asset.owner, propertyId})
+	key, err := stub.CreateCompositeKey(indexName, []string{asset.Owner, propertyId})
 
 	if err != nil {
 		fmt.Errorf(err.Error())
@@ -120,19 +115,19 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 		return shim.Error(err.Error())
 	}
 
-	if &(asset.propertyTransferRequest) == nil {
+	if &(asset.PropertyTransferRequest) == nil {
 		return shim.Error("No Transfer Request Found")
 	}
 
-	if asset.propertyTransferRequest.accepted == false {
+	if asset.PropertyTransferRequest.Accepted == false {
 		return shim.Error("Transfer Request Not Accepted By New Owner")
 	}
 
-	asset.owner = asset.propertyTransferRequest.newOwnerId
-	asset.propertyTransferRequest.newOwnerId = ""
-	asset.propertyTransferRequest.accepted = false
+	asset.Owner = asset.PropertyTransferRequest.NewOwnerId
+	asset.PropertyTransferRequest.NewOwnerId = ""
+	asset.PropertyTransferRequest.Accepted = false
 
-	newKey, err := stub.CreateCompositeKey(indexName, []string{asset.owner, propertyId})
+	newKey, err := stub.CreateCompositeKey(indexName, []string{asset.Owner, propertyId})
 
 	value,err := json.Marshal(asset)
 
@@ -200,7 +195,7 @@ func (t *PropertyChaincode) acceptTransferRequest(stub shim.ChaincodeStubInterfa
 
 	indexName := "compositePropertykey"
 
-	key, err := stub.CreateCompositeKey(indexName, []string{asset.owner, propertyId})
+	key, err := stub.CreateCompositeKey(indexName, []string{asset.Owner, propertyId})
 
 	if err != nil {
 		fmt.Errorf(err.Error())
@@ -210,25 +205,28 @@ func (t *PropertyChaincode) acceptTransferRequest(stub shim.ChaincodeStubInterfa
 	assetVal, err := stub.GetState(key)
 
 	if err != nil {
-		fmt.Printf(err.Error())
+		fmt.Errorf(err.Error())
 		return shim.Error(err.Error())
 	}
 
 	err = json.Unmarshal(assetVal, &asset)
 
 	if err != nil {
+		fmt.Errorf(err.Error())
 		return shim.Error(err.Error())
 	}
 
-	if &(asset.propertyTransferRequest) == nil {
+	if &(asset.PropertyTransferRequest) == nil {
+		fmt.Errorf("No Transfer Request Found")
 		return shim.Error("No Transfer Request Found")
 	}
 
-	if asset.propertyTransferRequest.newOwnerId != newOwnerId {
+	if asset.PropertyTransferRequest.NewOwnerId != newOwnerId {
+		fmt.Errorf("Invalid New Owner Id Supplied")
 		return shim.Error("Invalid New Owner Id Supplied")
 	}
 
-	asset.propertyTransferRequest.accepted = true
+	asset.PropertyTransferRequest.Accepted = true
 
 	value,err := json.Marshal(asset)
 
@@ -269,17 +267,17 @@ func (t *PropertyChaincode) transferPropertyRequest(stub shim.ChaincodeStubInter
 		return shim.Error(err.Error())
 	}
 
-	if asset.owner != ownerId {
+	if asset.Owner != ownerId {
 		jsonError := "Requesting User Not the owner of the property"
 		return shim.Error(jsonError)
 	}
 
 
 	var transferRequest PropertyTransferRequest
-	transferRequest.newOwnerId = args[2]
-	transferRequest.accepted = false
+	transferRequest.NewOwnerId = args[2]
+	transferRequest.Accepted = false
 
-	asset.propertyTransferRequest = transferRequest
+	asset.PropertyTransferRequest = transferRequest
 	indexName := "compositePropertykey"
 
 	key, err := stub.CreateCompositeKey(indexName, []string{ownerId, propertyId})
@@ -296,6 +294,8 @@ func (t *PropertyChaincode) transferPropertyRequest(stub shim.ChaincodeStubInter
 		return shim.Error(err.Error())
 	}
 
+	fmt.Print("Writing Value To Ledger : ")
+	fmt.Print(string(value))
 	err = stub.PutState(key, value)
 
 	if err != nil {
@@ -320,6 +320,9 @@ func (t *PropertyChaincode) getPropertyById(stub shim.ChaincodeStubInterface, ar
 		return shim.Error(err.Error())
 	}
 
+	if len(assetInfo) == 0 {
+		return shim.Error(fmt.Sprintf("No Object With Key : %s present In the Ledger.", key))
+	}
 	return shim.Success(assetInfo)
 }
 
@@ -338,7 +341,7 @@ func (t *PropertyChaincode) getPropertyByOwner(stub shim.ChaincodeStubInterface,
 		return shim.Error(err.Error())
 	}
 
-	var values []string
+	var values []Asset
 
 	for queryItr.HasNext() {
 		res, err := queryItr.Next()
@@ -346,13 +349,21 @@ func (t *PropertyChaincode) getPropertyByOwner(stub shim.ChaincodeStubInterface,
 		if err != nil {
 			fmt.Errorf(err.Error())
 		} else {
-			values = append(values, string(res.Value))
+			var asset Asset
+			err = json.Unmarshal(res.Value, &asset)
+			if err == nil {
+				values = append(values, asset)
+			}
 		}
 	}
 
 	val, err := json.Marshal(values)
 	if err != nil {
 		return shim.Error(err.Error())
+	}
+
+	if len(val) == 0 {
+		return shim.Error(fmt.Sprintf("No Object With Prefix-Key : %s present In the Ledger.", args[0]))
 	}
 	return shim.Success(val)
 }
@@ -367,7 +378,7 @@ func (t *PropertyChaincode) insertNewProperty(stub shim.ChaincodeStubInterface, 
 	args = args[1:]
 
 	var asset Asset
-	err := json.Unmarshal([]byte(args[0]), asset)
+	err := json.Unmarshal([]byte(args[0]), &asset)
 
 	if err != nil {
 		fmt.Errorf(err.Error())
@@ -376,13 +387,13 @@ func (t *PropertyChaincode) insertNewProperty(stub shim.ChaincodeStubInterface, 
 
 	if t.validate(asset) {
 		indexName := "compositePropertykey"
-		response := t.getPropertyById(stub, []string{"getById", asset.id})
+		response := t.getPropertyById(stub, []string{"getById", asset.Id})
 
 		if response.Status == 200 {
 			return shim.Error("Asset Already Present")
 		}
 
-		key, err := stub.CreateCompositeKey(indexName, []string{asset.owner, asset.id})
+		key, err := stub.CreateCompositeKey(indexName, []string{asset.Owner, asset.Id})
 
 		if err != nil {
 			fmt.Errorf(err.Error())
@@ -402,7 +413,7 @@ func (t *PropertyChaincode) insertNewProperty(stub shim.ChaincodeStubInterface, 
 			return shim.Error(err.Error())
 		}
 
-		err = stub.PutState(asset.id, value)
+		err = stub.PutState(asset.Id, value)
 		if err != nil {
 			stub.DelState(key)
 			if err != nil {
@@ -413,9 +424,10 @@ func (t *PropertyChaincode) insertNewProperty(stub shim.ChaincodeStubInterface, 
 			return shim.Error(err.Error())
 		}
 
-		fmt.Printf("Insert Success for %s", asset.id)
+		fmt.Printf("Insert Success for %s", asset.Id)
 		return shim.Success([]byte("Insert Success"))
 	} else {
+		fmt.Println(fmt.Sprintf("Asset Structure Not Valid. Please check JSON. %s", args[0]))
 		return shim.Error("Asset Structure Not Valid. Please check JSON.")
 	}
 }

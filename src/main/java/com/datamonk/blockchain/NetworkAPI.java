@@ -5,7 +5,11 @@ import com.datamonk.blockchain.config.SampleOrg;
 import com.datamonk.blockchain.config.SampleStore;
 import com.datamonk.blockchain.config.SampleUser;
 import com.datamonk.blockchain.config.helper.NetworkConfigHelper;
+import com.datamonk.blockchain.webapi.pojo.Asset;
 import org.apache.commons.codec.binary.Hex;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
 import org.hyperledger.fabric.sdk.*;
 import org.hyperledger.fabric.sdk.exception.TransactionEventException;
 import org.hyperledger.fabric.sdk.security.CryptoSuite;
@@ -13,6 +17,7 @@ import org.hyperledger.fabric_ca.sdk.HFCAClient;
 import org.hyperledger.fabric_ca.sdk.RegistrationRequest;
 import com.datamonk.blockchain.config.Util;
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Paths;
 import java.util.*;
@@ -22,6 +27,7 @@ import static com.datamonk.blockchain.config.Util.out;
 import static com.datamonk.blockchain.config.Util.out;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.codehaus.jackson.map.DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES;
 
 /**
  * Created by namakilam on 31/07/17.
@@ -446,8 +452,8 @@ public class NetworkAPI {
         }
     }
 
-    public static void main(String[] args) {
-        try {
+    public static void main(String[] args) throws IOException {
+        /*try {
             checkConfig();
             ////////////////////////////
             // Setup client
@@ -529,7 +535,20 @@ public class NetworkAPI {
             e.printStackTrace();
 
             out(e.getMessage());
-        }
+        }*/
+        String resStr = "[{\"id\":\"123456789012\",\"type\":\"land\",\"area\":\"400sq.ft\",\"address\":{\"address_line\":\"B-182, Chattarpur Enclave Phase 2\",\"city\":\"Delhi\"},\"owner\":\"575545553656\",\"property_transfer_request\":{}}]";
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
+        List<Asset> assets = objectMapper.readValue(resStr, new TypeReference<List<Asset>>() {});
+
+        System.out.println(assets);
     }
 
+    private static class Temp {
+        private List<Asset> assets;
+
+        public Temp() {
+
+        }
+    }
 }

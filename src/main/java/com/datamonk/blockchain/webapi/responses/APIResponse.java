@@ -88,19 +88,22 @@ public class APIResponse {
                 .jsonRpc(request.getJsonRpc())
                 .resultMap(new HashMap<String, Object>() {
                     {
-                        put("status", "O.K");
+                        put("status", 200);
                         put("message", message);
                     }
                 }).build();
     }
 
     public static APIResponse Success(APIRequest request, Map<String, Object> resultMap) {
+        resultMap.put("status", 200);
         return APIResponse.newAPIResponse().id(request.getId())
                 .jsonRpc(request.getJsonRpc())
                 .resultMap(resultMap).build();
+
     }
 
     public static APIResponse Success(Map<String, Object> resultMap) {
+        resultMap.put("status", 200);
         return APIResponse.newAPIResponse().id(1)
                 .jsonRpc(DEFAULT_JSON_RPC)
                 .resultMap(resultMap).build();
@@ -111,7 +114,7 @@ public class APIResponse {
                 .jsonRpc(DEFAULT_JSON_RPC)
                 .resultMap(new HashMap<String, Object>() {
                     {
-                        put("status", "O.K");
+                        put("status", 400);
                         put("message", e.getMessage());
                     }
                 }).build();
@@ -122,7 +125,7 @@ public class APIResponse {
                 .jsonRpc(request.getJsonRpc())
                 .resultMap(new HashMap<String, Object>() {
                     {
-                        put("status", "O.K");
+                        put("status", 400);
                         put("message", e.getMessage());
                     }
                 }).build();
