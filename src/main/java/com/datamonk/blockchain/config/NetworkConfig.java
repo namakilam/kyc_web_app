@@ -286,7 +286,8 @@ public class NetworkConfig {
 
     public String getTestChannelPath() {
 
-        return "/Users/namakilam/workspace/go/src/github.com/hyperledger/fabric/examples/e2e_cli";
+        //return "/Users/namakilam/workspace/go/src/github.com/hyperledger/fabric/examples/e2e_cli";
+        return "/home/ubuntu/workspace/src/github.com/hyperledger/fabric/examples/e2e_cli";
 
     }
 

@@ -49,7 +49,7 @@ public class ChainService {
     private static final NetworkConfig config = NetworkConfig.getConfig();
     private static final String TEST_ADMIN_NAME = "admin";
     private static final String TESTUSER_1_NAME = "user1";
-    private static final String TEST_FIXTURES_PATH = "/Users/namakilam/workspace/go/src/github.com/hyperledger/fabric/examples/e2e_cli";
+    private static final String TEST_FIXTURES_PATH = "/home/ubuntu/workspace/src/github.com/hyperledger/fabric/examples/e2e_cli";
     private static final String CHAIN_CODE_NAME = "kyc_cc";
     private static final String CHAIN_CODE_PATH = "github.com/example_cc";
     private static final String CHAIN_CODE_VERSION = "2.3.6";
@@ -249,7 +249,8 @@ public class ChainService {
         installProposalRequest.setChaincodeID(chaincodeId);
 
         installProposalRequest.setChaincodeInputStream(Util.generateTarGzInputStream(
-                Paths.get("/Users/namakilam/workspace/go/kyc_web_app/src/main/chaincode", "/sdkintegration/gocc/sample1", "src", chaincodeId.getPath()).toFile(),
+                //Paths.get("/Users/namakilam/workspace/go/kyc_web_app/src/main/chaincode", "/sdkintegration/gocc/sample1", "src", chaincodeId.getPath()).toFile(),
+                Paths.get("/home/ubuntu/workspace/kyc_web_app/src/main/chaincode", "/sdkintegration/gocc/sample1", "src", chaincodeId.getPath()).toFile(),
                 Paths.get("src", chaincodeId.getPath()).toString()
         ));
 
