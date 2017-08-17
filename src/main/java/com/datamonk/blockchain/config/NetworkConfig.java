@@ -133,7 +133,7 @@ public class NetworkConfig {
                 sampleOrg.setCALocation(httpTLSify(sdkProperties.getProperty((INTEGRATIONTESTS_ORG + org.getKey() + ".ca_location"))));
 
                 if (runningFabricCATLS) {
-                    String cert = "/Users/namakilam/workspace/go/src/github.com/hyperledger/fabric/examples/e2e_cli/crypto-config/peerOrganizations/DNAME/ca/ca.DNAME-cert.pem".replaceAll("DNAME", domainName);
+                    String cert = "/home/ubuntu/workspace/src/github.com/hyperledger/fabric/examples/e2e_cli/crypto-config/peerOrganizations/DNAME/ca/ca.DNAME-cert.pem".replaceAll("DNAME", domainName);
                     File cf = new File(cert);
                     if (!cf.exists() || !cf.isFile()) {
                         throw new RuntimeException("TEST is missing cert file " + cf.getAbsolutePath());
