@@ -62,6 +62,8 @@ func (t *PropertyChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response
 		return t.acceptTransferRequest(stub, args)
 	case "approveTransferRequest":
 		return t.approveTransferRequest(stub, args)
+	case "history":
+		return t.historyDataFromLedger(stub, args)
 	default:
 		fmt.Print("Unkown Function Call")
 		return shim.Error("Unkown Function Call")
@@ -69,6 +71,47 @@ func (t *PropertyChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response
 
 	return shim.Error("Unknown action, check the first argument")
 }
+
+func (t *PropertyChaincode) historyDataFromLedger(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) != 2 {
+		return shim.Error("Incorrect Number of Arguments. Required : 2")
+	}
+	args = args[1:]
+
+	key := args[0]
+	historyItr, err := stub.GetHistoryForKey(key)
+
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	var history []Asset
+
+	for historyItr.HasNext() {
+		alters, err := historyItr.Next()
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			var asset Asset
+			err = json.Unmarshal(alters.Value, &asset)
+			if err == nil {
+				history =  append(history, asset)
+			}
+		}
+	}
+
+	val, err := json.Marshal(history)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	if len(val) == 0 {
+		return shim.Error(fmt.Sprintf("No Object With Key : %s present In the Ledger.", key))
+	}
+
+	return shim.Success(val)
+}
+
 
 func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 2 {
