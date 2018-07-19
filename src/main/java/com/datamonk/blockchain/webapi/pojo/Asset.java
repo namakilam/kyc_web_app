@@ -21,7 +21,7 @@ public class Asset implements Serializable {
     private AssetType assetType;
 
     @JsonProperty("area")
-    private String area;
+    private Integer area;
 
     @JsonProperty("owner")
     private String owner;
@@ -69,11 +69,11 @@ public class Asset implements Serializable {
         this.assetType = assetType;
     }
 
-    public String getArea() {
+    public Integer getArea() {
         return area;
     }
 
-    public void setArea(String area) {
+    public void setArea(Integer area) {
         this.area = area;
     }
 
@@ -150,7 +150,7 @@ public class Asset implements Serializable {
     public static final class Builder {
         private String id;
         private AssetType assetType;
-        private String area;
+        private Integer area;
         private String owner;
         private Address address;
         private String parent;
@@ -169,7 +169,7 @@ public class Asset implements Serializable {
             return this;
         }
 
-        public Builder area(String val) {
+        public Builder area(Integer val) {
             area = val;
             return this;
         }
