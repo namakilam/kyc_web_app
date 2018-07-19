@@ -550,7 +550,7 @@ func (t *PropertyChaincode) insertNewProperty(stub shim.ChaincodeStubInterface, 
 	fmt.Println("Insert Stage 1")
 
 	args = args[1:]
-
+	fmt.Println(args[0])
 	var asset Asset
 	err := json.Unmarshal([]byte(args[0]), &asset)
 
