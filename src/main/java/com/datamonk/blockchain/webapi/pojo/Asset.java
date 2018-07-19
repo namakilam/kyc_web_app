@@ -6,6 +6,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * Created by namakilam on 11/08/17.
@@ -32,7 +33,7 @@ public class Asset implements Serializable {
     private String parent;
 
     @JsonProperty("children")
-    private String children;
+    private List<String> children;
 
     public Asset() {
 
@@ -100,11 +101,11 @@ public class Asset implements Serializable {
         this.parent = parent;
     }
 
-    public String getChildren() {
+    public List<String> getChildren() {
         return children;
     }
 
-    public void setChildren(String children) {
+    public void setChildren(List<String> children) {
         this.children = children;
     }
 
@@ -153,7 +154,7 @@ public class Asset implements Serializable {
         private String owner;
         private Address address;
         private String parent;
-        private String children;
+        private List<String> children;
 
         private Builder() {
         }
@@ -188,7 +189,7 @@ public class Asset implements Serializable {
             return this;
         }
 
-        public Builder children(String val) {
+        public Builder children(List<String> val) {
             children = val;
             return this;
         }
