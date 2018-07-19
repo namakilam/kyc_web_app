@@ -547,6 +547,8 @@ func (t *PropertyChaincode) insertNewProperty(stub shim.ChaincodeStubInterface, 
 		return shim.Error("Incorrect Number of Arguments.")
 	}
 
+	fmt.Println("Insert Stage 1")
+
 	args = args[1:]
 
 	var asset Asset
@@ -557,6 +559,8 @@ func (t *PropertyChaincode) insertNewProperty(stub shim.ChaincodeStubInterface, 
 		return shim.Error(err.Error())
 	}
 
+	fmt.Println("Insert Stage 2")
+
 	if t.validate(asset) {
 		indexName := "compositePropertykey"
 		response := t.getPropertyById(stub, []string{"getById", asset.Id})
@@ -564,31 +568,32 @@ func (t *PropertyChaincode) insertNewProperty(stub shim.ChaincodeStubInterface, 
 		if response.Status == 200 {
 			return shim.Error("Asset Already Present")
 		}
-
+		fmt.Println("Insert Stage 3")
 		if len(asset.Parent) != 0 && len(asset.Children) != 0 {
+
 			return shim.Error("Parent and Children Not Allowed While Inserting Property")
 		}
-
+		fmt.Println("Insert Stage 4")
 		key, err := stub.CreateCompositeKey(indexName, []string{asset.Owner, asset.Id})
 
 		if err != nil {
 			fmt.Errorf(err.Error())
 			return shim.Error("Error Creating Composite Key")
 		}
-
+		fmt.Println("Insert Stage 5")
 		value, err := json.Marshal(asset)
 
 		if err != nil {
 			fmt.Errorf(err.Error())
 			return shim.Error(err.Error())
 		}
-
+		fmt.Println("Insert Stage 6")
 		err = stub.PutState(key, value)
 
 		if err != nil {
 			return shim.Error(err.Error())
 		}
-
+		fmt.Println("Insert Stage 7")
 		err = stub.PutState(asset.Id, value)
 		if err != nil {
 			stub.DelState(key)
@@ -599,7 +604,6 @@ func (t *PropertyChaincode) insertNewProperty(stub shim.ChaincodeStubInterface, 
 			fmt.Errorf(err.Error())
 			return shim.Error(err.Error())
 		}
-
 		fmt.Printf("Insert Success for %s", asset.Id)
 		return shim.Success([]byte("Insert Success"))
 	} else {
