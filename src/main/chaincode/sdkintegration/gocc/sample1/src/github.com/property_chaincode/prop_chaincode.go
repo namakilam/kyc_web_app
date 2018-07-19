@@ -132,15 +132,15 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 		return shim.Error("Transfer Request Not Accepted By New Owner")
 	}
 
-	asset.PropertyTransferRequest.NewOwnerId = ""
-	asset.PropertyTransferRequest.Accepted = false
+
 
 	/**
 		Old Logic Without the Split Property Logic
 	 */
 	if asset.PropertyTransferRequest.SplitSize == 0 {
 		asset.Owner = asset.PropertyTransferRequest.NewOwnerId
-
+		asset.PropertyTransferRequest.NewOwnerId = ""
+		asset.PropertyTransferRequest.Accepted = false
 		newKey, err := stub.CreateCompositeKey(indexName, []string{asset.Owner, propertyId})
 
 		value, err := json.Marshal(asset)
@@ -202,6 +202,14 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 		asset2.Parent = asset.Id
 
 		asset.Children = []string{asset1.Id, asset2.Id}
+
+		asset1.PropertyTransferRequest.NewOwnerId = ""
+		asset1.PropertyTransferRequest.Accepted = false
+		asset1.PropertyTransferRequest.SplitSize = 0
+
+		asset2.PropertyTransferRequest.NewOwnerId = ""
+		asset2.PropertyTransferRequest.Accepted = false
+		asset2.PropertyTransferRequest.SplitSize = 0
 
 		err = stub.DelState(key)
 
