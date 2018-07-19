@@ -1,23 +1,43 @@
 package com.datamonk.blockchain.hyperledger;
 
-import com.datamonk.blockchain.config.*;
+import com.datamonk.blockchain.config.NetworkConfig;
+import com.datamonk.blockchain.config.SampleOrg;
+import com.datamonk.blockchain.config.SampleStore;
+import com.datamonk.blockchain.config.SampleUser;
+import com.datamonk.blockchain.config.Util;
 import com.datamonk.blockchain.config.helper.NetworkConfigHelper;
-import com.datamonk.blockchain.hyperledger.exceptions.*;
-import com.datamonk.blockchain.webapi.API;
+import com.datamonk.blockchain.hyperledger.exceptions.ChaincodeInstantiationFailedException;
+import com.datamonk.blockchain.hyperledger.exceptions.FailedQueryProposalException;
+import com.datamonk.blockchain.hyperledger.exceptions.InconsistentProposalResponseException;
+import com.datamonk.blockchain.hyperledger.exceptions.InvalidNumberArgumentException;
+import com.datamonk.blockchain.hyperledger.exceptions.NotEnoughEndorsersException;
+import com.datamonk.blockchain.hyperledger.exceptions.QueryResultFailureException;
 import com.datamonk.blockchain.webapi.pojo.Asset;
 import com.datamonk.blockchain.webapi.pojo.ChainCodeIDPojo;
 import com.datamonk.blockchain.webapi.pojo.KYCUser;
 import com.datamonk.blockchain.webapi.requests.APIRequest;
-import com.datamonk.blockchain.webapi.requests.RequestParams;
 import com.google.protobuf.ByteString;
 import org.apache.commons.codec.binary.Hex;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
 import org.hyperledger.fabric.protos.peer.Query;
-import org.hyperledger.fabric.sdk.*;
+import org.hyperledger.fabric.sdk.BlockInfo;
+import org.hyperledger.fabric.sdk.ChaincodeEndorsementPolicy;
+import org.hyperledger.fabric.sdk.ChaincodeID;
+import org.hyperledger.fabric.sdk.ChaincodeResponse;
+import org.hyperledger.fabric.sdk.Channel;
+import org.hyperledger.fabric.sdk.ChannelConfiguration;
+import org.hyperledger.fabric.sdk.EventHub;
+import org.hyperledger.fabric.sdk.HFClient;
+import org.hyperledger.fabric.sdk.InstallProposalRequest;
+import org.hyperledger.fabric.sdk.InstantiateProposalRequest;
+import org.hyperledger.fabric.sdk.Orderer;
+import org.hyperledger.fabric.sdk.Peer;
+import org.hyperledger.fabric.sdk.ProposalResponse;
+import org.hyperledger.fabric.sdk.QueryByChaincodeRequest;
+import org.hyperledger.fabric.sdk.SDKUtils;
+import org.hyperledger.fabric.sdk.TransactionProposalRequest;
 import org.hyperledger.fabric.sdk.exception.ChaincodeEndorsementPolicyParseException;
 import org.hyperledger.fabric.sdk.exception.ProposalException;
-import org.hyperledger.fabric.sdk.exception.QueryException;
 import org.hyperledger.fabric.sdk.security.CryptoSuite;
 import org.hyperledger.fabric_ca.sdk.HFCAClient;
 import org.hyperledger.fabric_ca.sdk.RegistrationRequest;
@@ -34,7 +54,16 @@ import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -55,7 +84,7 @@ public class ChainService {
     private static final String CHAIN_CODE_VERSION = "2.3.6";
     private static final String PROPERTY_CHAIN_CODE_NAME = "property_cc";
     private static final String PROPERTY_CHAIN_CODE_PATH = "github.com/property_chaincode";
-    private static final String PROPERTY_CHAIN_CODE_VERSION = "2.4.7";
+    private static final String PROPERTY_CHAIN_CODE_VERSION = "2.4.8";
 
     private static final String CHANNEL_NAME = "mychannel";
 
@@ -63,6 +92,7 @@ public class ChainService {
 
     private static final String ACCEPT_TRANSFER_PROPERTY_METHOD_KEY = "acceptTransferRequest";
     private static final String TRANSFER_PROPERTY_METHOD_KEY = "transferRequest";
+    private static final String TRANSFER_PROPERTY_BY_PART_METHOD_KEY = "transferRequestByPart";
     private static final String INSERT_ASSET_METHOD_KEY = "insert";
     private static final String GET_PROPERTY_ID_METHOD_KEY = "getById";
     private static final String GET_PROPERTY_OWNER_METHOD_KEY = "getByOwner";
@@ -70,7 +100,7 @@ public class ChainService {
     private static final String HISTORY_METHOD_KEY = "history";
     private static final String RETRIEVE_METHOD_KEY = "retrieve";
     private static final String INSERT_METHOD_KEY = "insert";
-    private static final String RESULT_KEY =  "result";
+    private static final String RESULT_KEY = "result";
     private static final String APPROVE_TRANSFER_PROPERTY_METHOD_KEY = "approveTransferRequest";
     private static final String TRANSACTION_ID_KEY = "transaction_id";
     private static final String BLOCK_NUMBER_KEY = "block";
@@ -342,8 +372,8 @@ public class ChainService {
         for (String orderName : sampleOrg.getOrdererNames()) {
 
             Properties ordererProperties = config.getOrdererProperties(orderName);
-            ordererProperties.put("grpc.NettyChannelBuilderOption.keepAliveTime", new Object[] {5L, TimeUnit.MINUTES});
-            ordererProperties.put("grpc.NettyChannelBuilderOption.keepAliveTimeout", new Object[] {8L, TimeUnit.SECONDS});
+            ordererProperties.put("grpc.NettyChannelBuilderOption.keepAliveTime", new Object[]{5L, TimeUnit.MINUTES});
+            ordererProperties.put("grpc.NettyChannelBuilderOption.keepAliveTimeout", new Object[]{8L, TimeUnit.SECONDS});
 
             orderers.add(client.newOrderer(orderName, sampleOrg.getOrdererLocation(orderName),
                     ordererProperties));
@@ -390,8 +420,8 @@ public class ChainService {
 
             final Properties eventHubProperties = config.getEventHubProperties(eventHubName);
 
-            eventHubProperties.put("grpc.NettyChannelBuilderOption.keepAliveTime", new Object[] {5L, TimeUnit.MINUTES});
-            eventHubProperties.put("grpc.NettyChannelBuilderOption.keepAliveTimeout", new Object[] {8L, TimeUnit.SECONDS});
+            eventHubProperties.put("grpc.NettyChannelBuilderOption.keepAliveTime", new Object[]{5L, TimeUnit.MINUTES});
+            eventHubProperties.put("grpc.NettyChannelBuilderOption.keepAliveTimeout", new Object[]{8L, TimeUnit.SECONDS});
 
             EventHub eventHub = client.newEventHub(eventHubName, sampleOrg.getEventHubLocation(eventHubName),
                     eventHubProperties);
@@ -434,7 +464,7 @@ public class ChainService {
             transactionProposalRequest.setChaincodeID(kycChaincodeId);
             transactionProposalRequest.setFcn("invoke");
             transactionProposalRequest.setProposalWaitTime(config.getProposalWaitTime());
-            transactionProposalRequest.setArgs(new String[] {INSERT_METHOD_KEY, KYCUser.toJsonString(user)});
+            transactionProposalRequest.setArgs(new String[]{INSERT_METHOD_KEY, KYCUser.toJsonString(user)});
 
             Map<String, byte[]> tm2 = new HashMap<>();
             tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
@@ -450,14 +480,14 @@ public class ChainService {
 
     public Map<String, Object> queryDataFromLedger(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, ProposalException, FailedQueryProposalException, QueryResultFailureException {
         if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 1) {
-            throw new InvalidNumberArgumentException(1, request.getRequestParams().getCtorMsg().getArgs() == null ? 0: request.getRequestParams().getCtorMsg().getArgs().size());
+            throw new InvalidNumberArgumentException(1, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
 
         String aadharNumber = request.getRequestParams().getCtorMsg().getArgs().get(0);
 
         QueryByChaincodeRequest queryByChaincodeRequest = client.newQueryProposalRequest();
         queryByChaincodeRequest.setFcn("invoke");
-        queryByChaincodeRequest.setArgs(new String[]{RETRIEVE_METHOD_KEY,aadharNumber});
+        queryByChaincodeRequest.setArgs(new String[]{RETRIEVE_METHOD_KEY, aadharNumber});
         queryByChaincodeRequest.setChaincodeID(kycChaincodeId);
         Map<String, byte[]> tm2 = new HashMap<>();
         tm2.put("HyperLedgerFabric", "QueryByChaincodeRequest:JavaSDK".getBytes(UTF_8));
@@ -469,14 +499,14 @@ public class ChainService {
 
     public Map<String, Object> historyDataFromLedger(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, FailedQueryProposalException, ProposalException, QueryResultFailureException {
         if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 1) {
-            throw new InvalidNumberArgumentException(1, request.getRequestParams().getCtorMsg().getArgs() == null ? 0: request.getRequestParams().getCtorMsg().getArgs().size());
+            throw new InvalidNumberArgumentException(1, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
 
         String aadharNumber = request.getRequestParams().getCtorMsg().getArgs().get(0);
 
         QueryByChaincodeRequest queryByChaincodeRequest = client.newQueryProposalRequest();
         queryByChaincodeRequest.setFcn("invoke");
-        queryByChaincodeRequest.setArgs(new String[] {HISTORY_METHOD_KEY, aadharNumber});
+        queryByChaincodeRequest.setArgs(new String[]{HISTORY_METHOD_KEY, aadharNumber});
         queryByChaincodeRequest.setChaincodeID(kycChaincodeId);
         Map<String, byte[]> tm2 = new HashMap<>();
         tm2.put("HyperLedgerFabric", "QueryByChaincodeRequest:JavaSDK".getBytes(UTF_8));
@@ -489,7 +519,7 @@ public class ChainService {
 
     public Map<String, Object> updateDataIntoLedger(APIRequest request) throws InvalidNumberArgumentException, IOException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, InterruptedException, ExecutionException, InconsistentProposalResponseException, ProposalException, NotEnoughEndorsersException {
         if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 2) {
-            throw new InvalidNumberArgumentException(2, request.getRequestParams().getCtorMsg().getArgs() == null ? 0: request.getRequestParams().getCtorMsg().getArgs().size());
+            throw new InvalidNumberArgumentException(2, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
 
         String aadharNumber = request.getRequestParams().getCtorMsg().getArgs().get(0);
@@ -500,7 +530,7 @@ public class ChainService {
         transactionProposalRequest.setChaincodeID(kycChaincodeId);
         transactionProposalRequest.setFcn("invoke");
         transactionProposalRequest.setProposalWaitTime(config.getProposalWaitTime());
-        transactionProposalRequest.setArgs(new String[] {UPDATE_METHOD_KEY, aadharNumber, KYCUser.toJsonString(user)});
+        transactionProposalRequest.setArgs(new String[]{UPDATE_METHOD_KEY, aadharNumber, KYCUser.toJsonString(user)});
 
         Map<String, byte[]> tm2 = new HashMap<>();
         tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
@@ -529,7 +559,7 @@ public class ChainService {
         transactionProposalRequest.setChaincodeID(propertyChaincodeId);
         transactionProposalRequest.setFcn("invoke");
         transactionProposalRequest.setProposalWaitTime(config.getProposalWaitTime());
-        transactionProposalRequest.setArgs(new String[] {INSERT_ASSET_METHOD_KEY, Asset.toJsonString(asset)});
+        transactionProposalRequest.setArgs(new String[]{INSERT_ASSET_METHOD_KEY, Asset.toJsonString(asset)});
 
         Map<String, byte[]> tm2 = new HashMap<>();
         tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
@@ -542,7 +572,7 @@ public class ChainService {
 
     public Map<String, Object> getBlockByNumber(APIRequest request) throws InvalidNumberArgumentException, ProposalException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, IOException {
         if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 1) {
-            throw new InvalidNumberArgumentException(1, request.getRequestParams().getCtorMsg().getArgs() == null ? 0: request.getRequestParams().getCtorMsg().getArgs().size());
+            throw new InvalidNumberArgumentException(1, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
 
         Long blockNumber = Long.valueOf(request.getRequestParams().getCtorMsg().getArgs().get(0));
@@ -570,7 +600,7 @@ public class ChainService {
 
     public Map<String, Object> getPropertyInfoById(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, FailedQueryProposalException, ProposalException, QueryResultFailureException {
         if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 1) {
-            throw new InvalidNumberArgumentException(1, request.getRequestParams().getCtorMsg().getArgs() == null ? 0: request.getRequestParams().getCtorMsg().getArgs().size());
+            throw new InvalidNumberArgumentException(1, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
 
         String propertyId = request.getRequestParams().getCtorMsg().getArgs().get(0);
@@ -589,7 +619,7 @@ public class ChainService {
 
     public Map<String, Object> getPropertyInfoByOwner(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, FailedQueryProposalException, ProposalException, QueryResultFailureException {
         if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 1) {
-            throw new InvalidNumberArgumentException(1, request.getRequestParams().getCtorMsg().getArgs() == null ? 0: request.getRequestParams().getCtorMsg().getArgs().size());
+            throw new InvalidNumberArgumentException(1, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
 
         String ownerId = request.getRequestParams().getCtorMsg().getArgs().get(0);
@@ -607,14 +637,17 @@ public class ChainService {
     }
 
     public Map<String, Object> propertyTransferRequest(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, FailedQueryProposalException, ProposalException, QueryResultFailureException, InterruptedException, ExecutionException, InconsistentProposalResponseException, NotEnoughEndorsersException, UnsupportedEncodingException {
-        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 3) {
-            throw new InvalidNumberArgumentException(3, request.getRequestParams().getCtorMsg().getArgs() == null ? 0: request.getRequestParams().getCtorMsg().getArgs().size());
+        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() < 3) {
+            throw new InvalidNumberArgumentException(3, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
 
         String currOwnerId = request.getRequestParams().getCtorMsg().getArgs().get(0);
         String propertyId = request.getRequestParams().getCtorMsg().getArgs().get(1);
         String newOwnerId = request.getRequestParams().getCtorMsg().getArgs().get(2);
-
+        Integer splitSize = null;
+        if (request.getRequestParams().getCtorMsg().getArgs().size() > 3) {
+            splitSize = Integer.parseInt(request.getRequestParams().getCtorMsg().getArgs().get(3));
+        }
 
 
         try {
@@ -649,7 +682,12 @@ public class ChainService {
 
         TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
         transactionProposalRequest.setFcn("invoke");
-        transactionProposalRequest.setArgs(new String[]{TRANSFER_PROPERTY_METHOD_KEY, propertyId, currOwnerId,newOwnerId});
+        if (splitSize == null) {
+            transactionProposalRequest.setArgs(new String[]{TRANSFER_PROPERTY_METHOD_KEY, propertyId, currOwnerId, newOwnerId});
+        } else {
+            transactionProposalRequest.setArgs(new String[]{TRANSFER_PROPERTY_BY_PART_METHOD_KEY, propertyId, currOwnerId, newOwnerId, splitSize.toString()});
+        }
+
         transactionProposalRequest.setChaincodeID(propertyChaincodeId);
 
         Map<String, byte[]> tm2 = new HashMap<>();
@@ -662,7 +700,7 @@ public class ChainService {
 
     public Map<String, Object> acceptPropertyTransferRequest(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, FailedQueryProposalException, ProposalException, InterruptedException, ExecutionException, InconsistentProposalResponseException, NotEnoughEndorsersException, UnsupportedEncodingException {
         if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 2) {
-            throw new InvalidNumberArgumentException(2, request.getRequestParams().getCtorMsg().getArgs() == null ? 0: request.getRequestParams().getCtorMsg().getArgs().size());
+            throw new InvalidNumberArgumentException(2, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
         String newOwnerId = request.getRequestParams().getCtorMsg().getArgs().get(0);
         String propertyId = request.getRequestParams().getCtorMsg().getArgs().get(1);
@@ -681,7 +719,7 @@ public class ChainService {
 
     public Map<String, Object> approveTransferRequest(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, InconsistentProposalResponseException, NotEnoughEndorsersException, ExecutionException, UnsupportedEncodingException, InterruptedException, ProposalException {
         if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 1) {
-            throw new InvalidNumberArgumentException(1, request.getRequestParams().getCtorMsg().getArgs() == null ? 0: request.getRequestParams().getCtorMsg().getArgs().size());
+            throw new InvalidNumberArgumentException(1, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
 
         String propertyId = request.getRequestParams().getCtorMsg().getArgs().get(0);
@@ -734,7 +772,7 @@ public class ChainService {
 
     private Map<String, Object> processQueryRequest(QueryByChaincodeRequest request) throws FailedQueryProposalException, ProposalException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, QueryResultFailureException {
         Collection<ProposalResponse> queryProposalResponse = kycChannel.queryByChaincode(request, kycChannel.getPeers());
-        for (ProposalResponse response: queryProposalResponse) {
+        for (ProposalResponse response : queryProposalResponse) {
             if (!response.isVerified() || response.getStatus() != ProposalResponse.Status.SUCCESS) {
                 throw new FailedQueryProposalException(response.getPeer(), response.isVerified(), response.getStatus(), response.getMessage());
             }

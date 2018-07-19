@@ -5,25 +5,30 @@ import (
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	pb "github.com/hyperledger/fabric/protos/peer"
 	"encoding/json"
+	"strings"
+	"strconv"
 )
 
 type Address struct {
 	Address_Line string `json:"address_line"`
-	City string `json:"city"`
+	City         string `json:"city"`
 }
 
 type PropertyTransferRequest struct {
 	NewOwnerId string `json:"new_owner_id"`
-	Accepted bool `json:"accepted"`
+	Accepted   bool `json:"accepted"`
+	SplitSize  int `json:"split_size"`
 }
 
 type Asset struct {
-	Id string`json:"id"`
-	Type string `json:"type"`
-	Area string `json:"area"`
-	Address Address `json:"address"`
-	Owner string `json:"owner"`
+	Id                      string`json:"id"`
+	Type                    string `json:"type"`
+	Area                    int `json:"area"`
+	Address                 Address `json:"address"`
+	Owner                   string `json:"owner"`
 	PropertyTransferRequest PropertyTransferRequest `json:"property_transfer_request"`
+	Parent                  string `json:"parentId"`
+	Children                []string `json:"children"`
 }
 
 type PropertyChaincode struct {
@@ -37,7 +42,7 @@ func (t *PropertyChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	return shim.Success([]byte("I.N.I.T SUCCESS"))
 }
 
-func (t *PropertyChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response  {
+func (t *PropertyChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	fmt.Println("####    PROPERTY CHAINCODE INVOKED    ####")
 	function, args := stub.GetFunctionAndParameters()
 
@@ -49,6 +54,8 @@ func (t *PropertyChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response
 		return shim.Error("Incorrect Number of Arguments. Expecting atleast 2")
 	}
 
+	fmt.Println(args[0] + " Invoked")
+
 	switch args[0] {
 	case "insert":
 		return t.insertNewProperty(stub, args)
@@ -58,6 +65,8 @@ func (t *PropertyChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response
 		return t.getPropertyByOwner(stub, args)
 	case "transferRequest":
 		return t.transferPropertyRequest(stub, args)
+	case "transferRequestByPart":
+		return t.transferPropertyRequestByPart(stub, args)
 	case "acceptTransferRequest":
 		return t.acceptTransferRequest(stub, args)
 	case "approveTransferRequest":
@@ -123,51 +132,141 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 		return shim.Error("Transfer Request Not Accepted By New Owner")
 	}
 
-	asset.Owner = asset.PropertyTransferRequest.NewOwnerId
-	asset.PropertyTransferRequest.NewOwnerId = ""
-	asset.PropertyTransferRequest.Accepted = false
+	/**
+		Old Logic Without the Split Property Logic
+	 */
+	if asset.PropertyTransferRequest.SplitSize == 0 {
+		asset.Owner = asset.PropertyTransferRequest.NewOwnerId
+		asset.PropertyTransferRequest.NewOwnerId = ""
+		asset.PropertyTransferRequest.Accepted = false
 
-	newKey, err := stub.CreateCompositeKey(indexName, []string{asset.Owner, propertyId})
+		newKey, err := stub.CreateCompositeKey(indexName, []string{asset.Owner, propertyId})
 
-	value,err := json.Marshal(asset)
+		value, err := json.Marshal(asset)
 
-	if err != nil {
-		fmt.Errorf(err.Error())
-		return shim.Error(err.Error())
-	}
+		if err != nil {
+			fmt.Errorf(err.Error())
+			return shim.Error(err.Error())
+		}
 
-	err = stub.PutState(newKey, value)
+		err = stub.PutState(newKey, value)
 
-	if err != nil {
-		fmt.Printf(err.Error())
-		return shim.Error("Could Not Approve Transfer")
-	}
-
-	err = stub.DelState(key)
-
-	if err != nil {
-		err = stub.DelState(newKey)
 		if err != nil {
 			fmt.Printf(err.Error())
 			return shim.Error("Could Not Approve Transfer")
 		}
-		fmt.Printf(err.Error())
-		return shim.Error("Could Not Approve Transfer")
-	}
 
-	err = stub.PutState(propertyId, value)
+		err = stub.DelState(key)
 
-	if err != nil {
-		fmt.Printf(err.Error())
-		stub.DelState(newKey)
-		stub.PutState(key, value)
+		if err != nil {
+			err = stub.DelState(newKey)
+			if err != nil {
+				fmt.Printf(err.Error())
+				return shim.Error("Could Not Approve Transfer")
+			}
+			fmt.Printf(err.Error())
+			return shim.Error("Could Not Approve Transfer")
+		}
+
+		err = stub.PutState(propertyId, value)
+
+		if err != nil {
+			fmt.Printf(err.Error())
+			stub.DelState(newKey)
+			stub.PutState(key, value)
+
+			if err != nil {
+				return shim.Error("Could Not Approve Transfer")
+			}
+		}
+
+		return shim.Success([]byte("Property Transfer Sucess"))
+	} else {
+		/**
+			New Logic Of Splitting Property
+		 */
+
+		asset1 := asset
+		asset2 := asset
+
+		asset1.Id = strings.Join([]string{asset1.Id, "1"}, "/")
+		asset2.Id = strings.Join([]string{asset2.Id, "2"}, "/")
+
+		asset2.Area = asset.PropertyTransferRequest.SplitSize
+		asset1.Area -= asset2.Area
+
+		asset2.Owner = asset.PropertyTransferRequest.NewOwnerId
+
+		asset1.Parent = asset.Id
+		asset2.Parent = asset.Id
+
+		asset.Children = []string{asset1.Id, asset2.Id}
+
+		err = stub.DelState(key)
 
 		if err != nil {
 			return shim.Error("Could Not Approve Transfer")
 		}
-	}
 
-	return shim.Success([]byte("Property Transfer Sucess"))
+		newKey, err := stub.CreateCompositeKey(indexName, []string{asset1.Owner, asset1.Id})
+
+		if err != nil {
+			fmt.Errorf(err.Error())
+			return shim.Error(err.Error())
+		}
+
+		value, err := json.Marshal(asset1)
+
+		stub.PutState(asset1.Id, value)
+
+		if err != nil {
+			return shim.Error("Could Not Approve Transfer")
+		}
+
+		err = stub.PutState(newKey, value)
+
+		if err != nil {
+			return shim.Error("Could Not Approve Transfer")
+		}
+
+		newKey2, err := stub.CreateCompositeKey(indexName, []string{asset2.Owner, asset2.Id})
+
+		if err != nil {
+			fmt.Errorf(err.Error())
+			return shim.Error(err.Error())
+		}
+
+		value2, err := json.Marshal(asset2)
+
+		stub.PutState(asset2.Id, value2)
+
+		if err != nil {
+			stub.DelState(newKey)
+			stub.DelState(asset1.Id)
+			return shim.Error("Could Not Approve Transfer")
+		}
+
+		err = stub.PutState(newKey2, value2)
+
+		if err != nil {
+			stub.DelState(newKey)
+			stub.DelState(asset1.Id)
+			return shim.Error("Could Not Approve Transfer")
+		}
+
+		value, err = json.Marshal(asset)
+
+		err = stub.PutState(asset.Id, value)
+
+		if err != nil {
+			stub.DelState(newKey2)
+			stub.DelState(asset2.Id)
+			stub.DelState(newKey)
+			stub.DelState(asset1.Id)
+			return shim.Error("Could Not Approve Transfer")
+		}
+		return shim.Success([]byte("Property Transfer Sucess"))
+	}
 }
 
 func (t *PropertyChaincode) acceptTransferRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response {
@@ -228,7 +327,7 @@ func (t *PropertyChaincode) acceptTransferRequest(stub shim.ChaincodeStubInterfa
 
 	asset.PropertyTransferRequest.Accepted = true
 
-	value,err := json.Marshal(asset)
+	value, err := json.Marshal(asset)
 
 	if err != nil {
 		fmt.Errorf(err.Error())
@@ -245,7 +344,82 @@ func (t *PropertyChaincode) acceptTransferRequest(stub shim.ChaincodeStubInterfa
 	return shim.Success([]byte("Transfer Request Successfully Accepted"))
 }
 
-func (t *PropertyChaincode) transferPropertyRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response  {
+func (t *PropertyChaincode) transferPropertyRequestByPart(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) != 5 {
+		return shim.Error("Incorrect Number of Arguments.")
+	}
+
+	args = args[1:]
+	propertyId := args[0]
+	ownerId := args[1]
+	newOwnerId := args[2]
+	splitSize := args[3]
+
+	response := t.getPropertyById(stub, []string{"getById", propertyId})
+
+	if response.Status != 200 {
+		return shim.Error("Property Doesn't Exist")
+	}
+
+	var asset Asset
+	err := json.Unmarshal(response.Payload, &asset)
+
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	if asset.Owner != ownerId {
+		return shim.Error("Requesting Owner not the Owner of the property")
+	}
+
+	propArea := asset.Area
+	splitArea, err := strconv.Atoi(splitSize)
+
+	if err != nil {
+		return shim.Error("Invalid Split Size")
+	}
+
+	if propArea < splitArea {
+		return shim.Error("Split Size cannot be greater than property size")
+	} else if propArea == splitArea {
+		return t.transferPropertyRequest(stub, []string{"transferRequest", propertyId, ownerId, newOwnerId})
+	}
+
+	var transferPropertyRequest PropertyTransferRequest
+	transferPropertyRequest.NewOwnerId = newOwnerId
+	transferPropertyRequest.Accepted = false
+	transferPropertyRequest.SplitSize = splitArea
+
+	asset.PropertyTransferRequest = transferPropertyRequest
+	indexName := "compositePropertykey"
+
+	key, err := stub.CreateCompositeKey(indexName, []string{ownerId, propertyId})
+
+	if err != nil {
+		fmt.Errorf(err.Error())
+		return shim.Error("Error Creating Composite Key")
+	}
+
+	value, err := json.Marshal(asset)
+
+	if err != nil {
+		fmt.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+
+	fmt.Print("Writing Value to Ledger : ")
+	fmt.Print(string(value))
+
+	err = stub.PutState(key, value)
+
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success([]byte("Transfer Request Successfully Created"))
+}
+
+func (t *PropertyChaincode) transferPropertyRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 4 {
 		return shim.Error("Incorrect Number of Arguments.")
 	}
@@ -272,10 +446,10 @@ func (t *PropertyChaincode) transferPropertyRequest(stub shim.ChaincodeStubInter
 		return shim.Error(jsonError)
 	}
 
-
 	var transferRequest PropertyTransferRequest
 	transferRequest.NewOwnerId = args[2]
 	transferRequest.Accepted = false
+	transferRequest.SplitSize = 0
 
 	asset.PropertyTransferRequest = transferRequest
 	indexName := "compositePropertykey"
@@ -287,7 +461,7 @@ func (t *PropertyChaincode) transferPropertyRequest(stub shim.ChaincodeStubInter
 		return shim.Error("Error Creating Composite Key")
 	}
 
-	value,err := json.Marshal(asset)
+	value, err := json.Marshal(asset)
 
 	if err != nil {
 		fmt.Errorf(err.Error())
@@ -368,8 +542,6 @@ func (t *PropertyChaincode) getPropertyByOwner(stub shim.ChaincodeStubInterface,
 	return shim.Success(val)
 }
 
-
-
 func (t *PropertyChaincode) insertNewProperty(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 2 {
 		return shim.Error("Incorrect Number of Arguments.")
@@ -393,6 +565,10 @@ func (t *PropertyChaincode) insertNewProperty(stub shim.ChaincodeStubInterface, 
 			return shim.Error("Asset Already Present")
 		}
 
+		if len(asset.Parent) != 0 && len(asset.Children) != 0 {
+			return shim.Error("Parent and Children Not Allowed While Inserting Property")
+		}
+
 		key, err := stub.CreateCompositeKey(indexName, []string{asset.Owner, asset.Id})
 
 		if err != nil {
@@ -400,7 +576,7 @@ func (t *PropertyChaincode) insertNewProperty(stub shim.ChaincodeStubInterface, 
 			return shim.Error("Error Creating Composite Key")
 		}
 
-		value,err := json.Marshal(asset)
+		value, err := json.Marshal(asset)
 
 		if err != nil {
 			fmt.Errorf(err.Error())

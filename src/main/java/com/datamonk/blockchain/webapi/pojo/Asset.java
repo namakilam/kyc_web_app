@@ -28,8 +28,28 @@ public class Asset implements Serializable {
     @JsonProperty("address")
     private Address address;
 
+    @JsonProperty("parentId")
+    private String parent;
+
+    @JsonProperty("children")
+    private String children;
+
     public Asset() {
 
+    }
+
+    private Asset(Builder builder) {
+        setId(builder.id);
+        setAssetType(builder.assetType);
+        setArea(builder.area);
+        setOwner(builder.owner);
+        setAddress(builder.address);
+        setParent(builder.parent);
+        setChildren(builder.children);
+    }
+
+    public static Builder newBuilder() {
+        return new Builder();
     }
 
     public String getId() {
@@ -72,12 +92,20 @@ public class Asset implements Serializable {
         this.address = address;
     }
 
-    private Asset(Builder builder) {
-        this.id = builder.id;
-        this.assetType = builder.assetType;
-        this.area = builder.area;
-        this.owner = builder.owner;
-        this.address = builder.address;
+    public String getParent() {
+        return parent;
+    }
+
+    public void setParent(String parent) {
+        this.parent = parent;
+    }
+
+    public String getChildren() {
+        return children;
+    }
+
+    public void setChildren(String children) {
+        this.children = children;
     }
 
 
@@ -89,49 +117,6 @@ public class Asset implements Serializable {
         return objectMapper.writeValueAsString(asset);
     }
 
-    public static Builder newAsset() {
-        return new Builder();
-    }
-
-    public static final class Builder {
-        private String id;
-        private AssetType assetType;
-        private String area;
-        private String owner;
-        private Address address;
-
-        private Builder() {
-        }
-
-        public Asset build() {
-            return new Asset(this);
-        }
-
-        public Builder id(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public Builder assetType(AssetType assetType) {
-            this.assetType = assetType;
-            return this;
-        }
-
-        public Builder area(String area) {
-            this.area = area;
-            return this;
-        }
-
-        public Builder owner(String owner) {
-            this.owner = owner;
-            return this;
-        }
-
-        public Builder address(Address address) {
-            this.address = address;
-            return this;
-        }
-    }
 
     private class Address implements Serializable {
         @JsonProperty("address_line")
@@ -158,6 +143,58 @@ public class Asset implements Serializable {
 
         public void setCity(String city) {
             this.city = city;
+        }
+    }
+
+    public static final class Builder {
+        private String id;
+        private AssetType assetType;
+        private String area;
+        private String owner;
+        private Address address;
+        private String parent;
+        private String children;
+
+        private Builder() {
+        }
+
+        public Builder id(String val) {
+            id = val;
+            return this;
+        }
+
+        public Builder assetType(AssetType val) {
+            assetType = val;
+            return this;
+        }
+
+        public Builder area(String val) {
+            area = val;
+            return this;
+        }
+
+        public Builder owner(String val) {
+            owner = val;
+            return this;
+        }
+
+        public Builder address(Address val) {
+            address = val;
+            return this;
+        }
+
+        public Builder parent(String val) {
+            parent = val;
+            return this;
+        }
+
+        public Builder children(String val) {
+            children = val;
+            return this;
+        }
+
+        public Asset build() {
+            return new Asset(this);
         }
     }
 }
