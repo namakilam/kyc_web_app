@@ -84,7 +84,7 @@ public class ChainService {
     private static final String CHAIN_CODE_VERSION = "2.3.6";
     private static final String PROPERTY_CHAIN_CODE_NAME = "property_cc";
     private static final String PROPERTY_CHAIN_CODE_PATH = "github.com/property_chaincode";
-    private static final String PROPERTY_CHAIN_CODE_VERSION = "2.5.0";
+    private static final String PROPERTY_CHAIN_CODE_VERSION = "2.5.1";
 
     private static final String CHANNEL_NAME = "mychannel";
 
