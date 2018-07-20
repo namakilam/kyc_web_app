@@ -35,6 +35,9 @@ public class Asset implements Serializable {
     @JsonProperty("children")
     private List<String> children;
 
+    @JsonProperty("registeredBy")
+    private Approver registeredBy;
+
     public Asset() {
 
     }
@@ -47,6 +50,7 @@ public class Asset implements Serializable {
         setAddress(builder.address);
         setParent(builder.parent);
         setChildren(builder.children);
+        setRegisteredBy(builder.registeredBy);
     }
 
     public static Builder newBuilder() {
@@ -109,6 +113,13 @@ public class Asset implements Serializable {
         this.children = children;
     }
 
+    public Approver getRegisteredBy() {
+        return registeredBy;
+    }
+
+    public void setRegisteredBy(Approver registeredBy) {
+        this.registeredBy = registeredBy;
+    }
 
     public static Asset toAsset(String value) throws IOException {
         return objectMapper.readValue(value, Asset.class);
@@ -147,6 +158,34 @@ public class Asset implements Serializable {
         }
     }
 
+    private class Approver implements Serializable {
+        @JsonProperty("id")
+        private String id;
+
+        @JsonProperty("department")
+        private String department;
+
+        public Approver() {
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public void setId(String id) {
+            this.id = id;
+        }
+
+        public String getDepartment() {
+            return department;
+        }
+
+        public void setDepartment(String department) {
+            this.department = department;
+        }
+    }
+
+
     public static final class Builder {
         private String id;
         private AssetType assetType;
@@ -155,6 +194,7 @@ public class Asset implements Serializable {
         private Address address;
         private String parent;
         private List<String> children;
+        private Approver registeredBy;
 
         private Builder() {
         }
@@ -191,6 +231,11 @@ public class Asset implements Serializable {
 
         public Builder children(List<String> val) {
             children = val;
+            return this;
+        }
+
+        public Builder registeredBy(Approver val) {
+            registeredBy = val;
             return this;
         }
 

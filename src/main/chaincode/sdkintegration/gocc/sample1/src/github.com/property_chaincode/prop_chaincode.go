@@ -14,10 +14,16 @@ type Address struct {
 	City         string `json:"city"`
 }
 
+type Approver struct {
+	Id         string `json:"id"`
+	Department string `json:"department"`
+}
+
 type PropertyTransferRequest struct {
-	NewOwnerId string `json:"new_owner_id"`
-	Accepted   bool `json:"accepted"`
-	SplitSize  int `json:"split_size"`
+	NewOwnerId    string `json:"new_owner_id"`
+	Accepted      bool `json:"accepted"`
+	SplitSize     int `json:"split_size"`
+	Authorization []Approver `json:"authorizers"`
 }
 
 type Asset struct {
@@ -29,12 +35,17 @@ type Asset struct {
 	PropertyTransferRequest PropertyTransferRequest `json:"property_transfer_request"`
 	Parent                  string `json:"parentId"`
 	Children                []string `json:"children"`
+	RegisteredBy            Approver `json:"registeredBy"`
+	ApprovedBy              []Approver `json:"approvedBy"`
 }
 
 type PropertyChaincode struct {
 }
 
 func (t *PropertyChaincode) validate(asset Asset) bool {
+	if len(asset.RegisteredBy) == 0 {
+		return false
+	}
 	return true
 }
 
@@ -141,6 +152,9 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 		asset.Owner = asset.PropertyTransferRequest.NewOwnerId
 		asset.PropertyTransferRequest.NewOwnerId = ""
 		asset.PropertyTransferRequest.Accepted = false
+		asset.ApprovedBy = asset.PropertyTransferRequest.Authorization
+		asset.PropertyTransferRequest.Authorization = make([]Approver, 0)
+
 		newKey, err := stub.CreateCompositeKey(indexName, []string{asset.Owner, propertyId})
 
 		value, err := json.Marshal(asset)
@@ -206,10 +220,14 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 		asset1.PropertyTransferRequest.NewOwnerId = ""
 		asset1.PropertyTransferRequest.Accepted = false
 		asset1.PropertyTransferRequest.SplitSize = 0
+		asset1.ApprovedBy = asset1.PropertyTransferRequest.Authorization
+		asset1.PropertyTransferRequest.Authorization = make([]Approver, 0)
 
 		asset2.PropertyTransferRequest.NewOwnerId = ""
 		asset2.PropertyTransferRequest.Accepted = false
 		asset2.PropertyTransferRequest.SplitSize = 0
+		asset2.ApprovedBy = asset1.PropertyTransferRequest.Authorization
+		asset2.PropertyTransferRequest.Authorization = make([]Approver, 0)
 
 		err = stub.DelState(key)
 
@@ -279,13 +297,21 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 }
 
 func (t *PropertyChaincode) acceptTransferRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	if len(args) != 3 {
+	if len(args) != 4 {
 		return shim.Error("Incorrect Number of Arguments.")
 	}
 
 	args = args[1:]
 	newOwnerId := args[0]
 	propertyId := args[1]
+	approvedBy := args[2]
+
+	var approver Approver
+	err := json.Unmarshal([]byte(approvedBy), &approver)
+
+	if err != nil {
+		return shim.Error("Unable to Unmarshal the approver")
+	}
 
 	response := t.getPropertyById(stub, []string{"getById", propertyId})
 
@@ -294,7 +320,7 @@ func (t *PropertyChaincode) acceptTransferRequest(stub shim.ChaincodeStubInterfa
 	}
 
 	var asset Asset
-	err := json.Unmarshal(response.Payload, &asset)
+	err = json.Unmarshal(response.Payload, &asset)
 
 	if err != nil {
 		fmt.Printf(err.Error())
@@ -335,6 +361,7 @@ func (t *PropertyChaincode) acceptTransferRequest(stub shim.ChaincodeStubInterfa
 	}
 
 	asset.PropertyTransferRequest.Accepted = true
+	asset.PropertyTransferRequest.Authorization = append(asset.PropertyTransferRequest.Authorization, approver)
 
 	value, err := json.Marshal(asset)
 
@@ -354,7 +381,7 @@ func (t *PropertyChaincode) acceptTransferRequest(stub shim.ChaincodeStubInterfa
 }
 
 func (t *PropertyChaincode) transferPropertyRequestByPart(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	if len(args) != 5 {
+	if len(args) != 6 {
 		return shim.Error("Incorrect Number of Arguments.")
 	}
 
@@ -363,6 +390,14 @@ func (t *PropertyChaincode) transferPropertyRequestByPart(stub shim.ChaincodeStu
 	ownerId := args[1]
 	newOwnerId := args[2]
 	splitSize := args[3]
+	approvedBy := args[4]
+
+	var approver Approver
+	err := json.Unmarshal([]byte(approvedBy), &approver)
+
+	if err != nil {
+		return shim.Error("Unable to Unmarshal the approver")
+	}
 
 	response := t.getPropertyById(stub, []string{"getById", propertyId})
 
@@ -371,10 +406,15 @@ func (t *PropertyChaincode) transferPropertyRequestByPart(stub shim.ChaincodeStu
 	}
 
 	var asset Asset
-	err := json.Unmarshal(response.Payload, &asset)
+	err = json.Unmarshal(response.Payload, &asset)
 
 	if err != nil {
 		return shim.Error(err.Error())
+	}
+
+	if len(asset.Children) != 0 {
+		jsonError := "Spent Property Cannot be spent again"
+		return shim.Error(jsonError)
 	}
 
 	if asset.Owner != ownerId {
@@ -398,6 +438,7 @@ func (t *PropertyChaincode) transferPropertyRequestByPart(stub shim.ChaincodeStu
 	transferPropertyRequest.NewOwnerId = newOwnerId
 	transferPropertyRequest.Accepted = false
 	transferPropertyRequest.SplitSize = splitArea
+	transferPropertyRequest.Authorization = append(transferPropertyRequest.Authorization, approver)
 
 	asset.PropertyTransferRequest = transferPropertyRequest
 	indexName := "compositePropertykey"
@@ -429,13 +470,21 @@ func (t *PropertyChaincode) transferPropertyRequestByPart(stub shim.ChaincodeStu
 }
 
 func (t *PropertyChaincode) transferPropertyRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	if len(args) != 4 {
+	if len(args) != 5 {
 		return shim.Error("Incorrect Number of Arguments.")
 	}
 
 	args = args[1:]
 	propertyId := args[0]
 	ownerId := args[1]
+	approvedBy := args[3]
+
+	var approver Approver
+	err := json.Unmarshal([]byte(approvedBy), &approver)
+
+	if err != nil {
+		return shim.Error("Unable to Unmarshal the approver")
+	}
 
 	response := t.getPropertyById(stub, []string{"getById", propertyId})
 
@@ -444,10 +493,15 @@ func (t *PropertyChaincode) transferPropertyRequest(stub shim.ChaincodeStubInter
 	}
 
 	var asset Asset
-	err := json.Unmarshal(response.Payload, &asset)
+	err = json.Unmarshal(response.Payload, &asset)
 
 	if err != nil {
 		return shim.Error(err.Error())
+	}
+
+	if len(asset.Children) != 0 {
+		jsonError := "Spent Property Cannot be spent again"
+		return shim.Error(jsonError)
 	}
 
 	if asset.Owner != ownerId {
@@ -459,6 +513,7 @@ func (t *PropertyChaincode) transferPropertyRequest(stub shim.ChaincodeStubInter
 	transferRequest.NewOwnerId = args[2]
 	transferRequest.Accepted = false
 	transferRequest.SplitSize = 0
+	transferRequest.Authorization = append(transferRequest.Authorization, approver)
 
 	asset.PropertyTransferRequest = transferRequest
 	indexName := "compositePropertykey"
