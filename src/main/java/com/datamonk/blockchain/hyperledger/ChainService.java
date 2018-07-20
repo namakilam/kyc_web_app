@@ -704,10 +704,11 @@ public class ChainService {
         }
         String newOwnerId = request.getRequestParams().getCtorMsg().getArgs().get(0);
         String propertyId = request.getRequestParams().getCtorMsg().getArgs().get(1);
+        String approver = request.getRequestParams().getCtorMsg().getArgs().get(2);
 
         TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
         transactionProposalRequest.setFcn("invoke");
-        transactionProposalRequest.setArgs(new String[]{ACCEPT_TRANSFER_PROPERTY_METHOD_KEY, newOwnerId, propertyId});
+        transactionProposalRequest.setArgs(new String[]{ACCEPT_TRANSFER_PROPERTY_METHOD_KEY, newOwnerId, propertyId, approver});
         transactionProposalRequest.setChaincodeID(propertyChaincodeId);
         Map<String, byte[]> tm2 = new HashMap<>();
         tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
@@ -718,15 +719,16 @@ public class ChainService {
     }
 
     public Map<String, Object> approveTransferRequest(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, InconsistentProposalResponseException, NotEnoughEndorsersException, ExecutionException, UnsupportedEncodingException, InterruptedException, ProposalException {
-        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 1) {
-            throw new InvalidNumberArgumentException(1, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
+        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 2) {
+            throw new InvalidNumberArgumentException(2, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
 
         String propertyId = request.getRequestParams().getCtorMsg().getArgs().get(0);
+        String approver = request.getRequestParams().getCtorMsg().getArgs().get(1);
 
         TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
         transactionProposalRequest.setFcn("invoke");
-        transactionProposalRequest.setArgs(new String[]{APPROVE_TRANSFER_PROPERTY_METHOD_KEY, propertyId});
+        transactionProposalRequest.setArgs(new String[]{APPROVE_TRANSFER_PROPERTY_METHOD_KEY, propertyId, approver});
         transactionProposalRequest.setChaincodeID(propertyChaincodeId);
         Map<String, byte[]> tm2 = new HashMap<>();
         tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
