@@ -84,7 +84,7 @@ public class ChainService {
     private static final String CHAIN_CODE_VERSION = "2.3.6";
     private static final String PROPERTY_CHAIN_CODE_NAME = "property_cc";
     private static final String PROPERTY_CHAIN_CODE_PATH = "github.com/property_chaincode";
-    private static final String PROPERTY_CHAIN_CODE_VERSION = "2.5.8";
+    private static final String PROPERTY_CHAIN_CODE_VERSION = "2.5.9";
 
     private static final String CHANNEL_NAME = "mychannel";
 
@@ -98,6 +98,7 @@ public class ChainService {
     private static final String GET_PROPERTY_OWNER_METHOD_KEY = "getByOwner";
     private static final String UPDATE_METHOD_KEY = "update";
     private static final String HISTORY_METHOD_KEY = "history";
+    private static final String PROPERTY_HISTORY_METHOD_KEY = "readHistoryFromLedger";
     private static final String RETRIEVE_METHOD_KEY = "retrieve";
     private static final String INSERT_METHOD_KEY = "insert";
     private static final String RESULT_KEY = "result";
@@ -508,6 +509,26 @@ public class ChainService {
         queryByChaincodeRequest.setFcn("invoke");
         queryByChaincodeRequest.setArgs(new String[]{HISTORY_METHOD_KEY, aadharNumber});
         queryByChaincodeRequest.setChaincodeID(kycChaincodeId);
+        Map<String, byte[]> tm2 = new HashMap<>();
+        tm2.put("HyperLedgerFabric", "QueryByChaincodeRequest:JavaSDK".getBytes(UTF_8));
+        tm2.put("method", "QueryByChaincodeRequest".getBytes(UTF_8));
+
+        queryByChaincodeRequest.setTransientMap(tm2);
+
+        return processQueryRequest(queryByChaincodeRequest);
+    }
+
+    public Map<String, Object> historyDataFromLedgerProperty(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, QueryResultFailureException, ProposalException, FailedQueryProposalException {
+        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 1) {
+            throw new InvalidNumberArgumentException(1, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
+        }
+
+        String propertyId = request.getRequestParams().getCtorMsg().getArgs().get(0);
+
+        QueryByChaincodeRequest queryByChaincodeRequest = client.newQueryProposalRequest();
+        queryByChaincodeRequest.setFcn("invoke");
+        queryByChaincodeRequest.setArgs(new String[]{PROPERTY_HISTORY_METHOD_KEY, propertyId});
+        queryByChaincodeRequest.setChaincodeID(propertyChaincodeId);
         Map<String, byte[]> tm2 = new HashMap<>();
         tm2.put("HyperLedgerFabric", "QueryByChaincodeRequest:JavaSDK".getBytes(UTF_8));
         tm2.put("method", "QueryByChaincodeRequest".getBytes(UTF_8));

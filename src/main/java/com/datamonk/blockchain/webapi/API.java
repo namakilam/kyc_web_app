@@ -1,19 +1,17 @@
 package com.datamonk.blockchain.webapi;
 
 import com.datamonk.blockchain.hyperledger.ChainService;
-import com.datamonk.blockchain.hyperledger.exceptions.InconsistentProposalResponseException;
-import com.datamonk.blockchain.hyperledger.exceptions.InvalidNumberArgumentException;
-import com.datamonk.blockchain.hyperledger.exceptions.NotEnoughEndorsersException;
 import com.datamonk.blockchain.webapi.requests.APIRequest;
 import com.datamonk.blockchain.webapi.responses.APIResponse;
-import org.hyperledger.fabric.sdk.exception.InvalidArgumentException;
-import org.hyperledger.fabric.sdk.exception.ProposalException;
 
-import javax.ws.rs.*;
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Created by namakilam on 04/08/17.
@@ -47,6 +45,8 @@ public class API {
                     return retrieveDataFromLedger(request);
                 case "history":
                     return historyDataFromLedger(request);
+                case "historyProperty":
+                    return historyDataFromLedgerProperty(request);
                 case "update":
                     return updateDataFromLedger(request);
                 case "insertProperty":
@@ -105,6 +105,16 @@ public class API {
     private APIResponse historyDataFromLedger(APIRequest request) {
         try {
             Map<String, Object> resultMap = chainService.historyDataFromLedger(request);
+            return APIResponse.Success(request, resultMap);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return APIResponse.Failure(e);
+        }
+    }
+
+    private APIResponse historyDataFromLedgerProperty(APIRequest request) {
+        try {
+            Map<String, Object> resultMap = chainService.historyDataFromLedgerProperty(request);
             return APIResponse.Success(request, resultMap);
         } catch (Exception e) {
             e.printStackTrace();

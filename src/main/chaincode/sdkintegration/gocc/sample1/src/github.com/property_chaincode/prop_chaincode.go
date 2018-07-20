@@ -86,6 +86,8 @@ func (t *PropertyChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response
 		return t.getPropertyById(stub, args)
 	case "getByOwner":
 		return t.getPropertyByOwner(stub, args)
+	case "readHistoryFromLedger":
+		return t.readHistoryFromLedger(stub, args)
 	case "transferRequest":
 		return t.transferPropertyRequest(stub, args)
 	case "transferRequestByPart":
@@ -558,6 +560,36 @@ func (t *PropertyChaincode) transferPropertyRequest(stub shim.ChaincodeStubInter
 	}
 
 	return shim.Success([]byte("Transfer Request Successfully Created"))
+}
+
+func (t *PropertyChaincode) readHistoryFromLedger(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) != 1 {
+		return shim.Error("Incorrect Number of Arguments. Required : 2")
+	}
+
+	key := args[0]
+	historyItr, err := stub.GetHistoryForKey(key)
+
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	var history []string
+
+	for historyItr.HasNext() {
+		alters, err := historyItr.Next()
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			history = append(history, string(alters.Value))
+		}
+	}
+
+	val, err := json.Marshal(history)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(val)
 }
 
 func (t *PropertyChaincode) getPropertyById(stub shim.ChaincodeStubInterface, args []string) pb.Response {
