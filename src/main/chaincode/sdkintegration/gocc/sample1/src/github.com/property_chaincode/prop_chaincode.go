@@ -404,19 +404,21 @@ func (t *PropertyChaincode) transferPropertyRequestByPart(stub shim.ChaincodeStu
 	if response.Status != 200 {
 		return shim.Error("Property Doesn't Exist")
 	}
-
+	fmt.Println("Stage 1")
+	str := string(response.Payload)
+	fmt.Println(str)
 	var asset Asset
 	err := json.Unmarshal(response.Payload, &asset)
 
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-
+	fmt.Println("Stage 2")
 	if len(asset.Children) != 0 {
 		jsonError := "Spent Property Cannot be spent again"
 		return shim.Error(jsonError)
 	}
-
+	fmt.Println("Stage 3")
 	if asset.Owner != ownerId {
 		return shim.Error("Requesting Owner not the Owner of the property")
 	}
@@ -433,7 +435,7 @@ func (t *PropertyChaincode) transferPropertyRequestByPart(stub shim.ChaincodeStu
 	} else if propArea == splitArea {
 		return t.transferPropertyRequest(stub, []string{"transferRequest", propertyId, ownerId, newOwnerId})
 	}
-
+	fmt.Println("Stage 4")
 	var transferPropertyRequest PropertyTransferRequest
 	transferPropertyRequest.NewOwnerId = newOwnerId
 	transferPropertyRequest.Accepted = false
@@ -455,7 +457,7 @@ func (t *PropertyChaincode) transferPropertyRequestByPart(stub shim.ChaincodeStu
 		fmt.Errorf(err.Error())
 		return shim.Error(err.Error())
 	}
-
+	fmt.Println("Stage 5")
 	fmt.Print("Writing Value to Ledger : ")
 	fmt.Print(string(value))
 
