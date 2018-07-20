@@ -220,7 +220,7 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 		response.PrevOwner = prevOwner
 		response.NewOwner = asset.Owner
 		value, err = json.Marshal(response)
-		shim.Success(value)
+		return shim.Success(value)
 		//return shim.Success([]byte("Property Transfer Sucess"))
 	} else {
 		/**
@@ -324,7 +324,7 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 		response.Children = append(response.Children, asset1.Id)
 		response.Children = append(response.Children, asset2.Id)
 		value, err = json.Marshal(response)
-		shim.Success(value)
+		return shim.Success(value)
 		//return shim.Success([]byte("Property Transfer Sucess"))
 	}
 }
