@@ -699,8 +699,8 @@ public class ChainService {
     }
 
     public Map<String, Object> acceptPropertyTransferRequest(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, FailedQueryProposalException, ProposalException, InterruptedException, ExecutionException, InconsistentProposalResponseException, NotEnoughEndorsersException, UnsupportedEncodingException {
-        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 2) {
-            throw new InvalidNumberArgumentException(2, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
+        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 3) {
+            throw new InvalidNumberArgumentException(3, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
         String newOwnerId = request.getRequestParams().getCtorMsg().getArgs().get(0);
         String propertyId = request.getRequestParams().getCtorMsg().getArgs().get(1);
