@@ -39,6 +39,18 @@ type Asset struct {
 	ApprovedBy              []Approver `json:"approvedBy"`
 }
 
+type PropertySplitSuccessResponse struct {
+	Result   string `json:"result"`
+	ParentId string `json:"parentId"`
+	Children []string `json:"children"`
+}
+
+type PropertyTransferSuccessResponse struct {
+	Result    string `json:"result"`
+	PrevOwner string `json:"prevOwner"`
+	NewOwner  string `json:"newOwner"`
+}
+
 type PropertyChaincode struct {
 }
 
@@ -153,6 +165,7 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 
 	asset.PropertyTransferRequest.Authorization = append(asset.PropertyTransferRequest.Authorization, approver)
 
+	prevOwner := asset.Owner
 	/**
 		Old Logic Without the Split Property Logic
 	 */
@@ -202,8 +215,13 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 				return shim.Error("Could Not Approve Transfer")
 			}
 		}
-
-		return shim.Success([]byte("Property Transfer Sucess"))
+		var response PropertyTransferSuccessResponse
+		response.Result = "Property Transfer Sucess"
+		response.PrevOwner = prevOwner
+		response.NewOwner = asset.Owner
+		value, err = json.Marshal(response)
+		shim.Success(value)
+		//return shim.Success([]byte("Property Transfer Sucess"))
 	} else {
 		/**
 			New Logic Of Splitting Property
@@ -300,7 +318,14 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 			stub.DelState(asset1.Id)
 			return shim.Error("Could Not Approve Transfer")
 		}
-		return shim.Success([]byte("Property Transfer Sucess"))
+		var response PropertySplitSuccessResponse
+		response.Result = "Property Transfer Sucess"
+		response.ParentId = asset.Id
+		response.Children = append(response.Children, asset1.Id)
+		response.Children = append(response.Children, asset2.Id)
+		value, err = json.Marshal(response)
+		shim.Success(value)
+		//return shim.Success([]byte("Property Transfer Sucess"))
 	}
 }
 
