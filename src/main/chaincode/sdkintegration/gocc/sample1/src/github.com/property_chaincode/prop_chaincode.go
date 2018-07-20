@@ -563,7 +563,7 @@ func (t *PropertyChaincode) transferPropertyRequest(stub shim.ChaincodeStubInter
 }
 
 func (t *PropertyChaincode) readHistoryFromLedger(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	if len(args) != 1 {
+	if len(args) != 2 {
 		return shim.Error("Incorrect Number of Arguments. Required : 2")
 	}
 
