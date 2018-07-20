@@ -43,7 +43,7 @@ type PropertyChaincode struct {
 }
 
 func (t *PropertyChaincode) validate(asset Asset) bool {
-	if len(asset.RegisteredBy) == 0 {
+	if len(asset.RegisteredBy.Id) == 0 || len(asset.RegisteredBy.Department) == 0 {
 		return false
 	}
 	return true
