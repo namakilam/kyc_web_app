@@ -194,9 +194,9 @@ func (t *PropertyChaincode) rejectTransferRequest(stub shim.ChaincodeStubInterfa
 	err = stub.PutState(key, value)
 
 	if err != nil {
-		return shim.Success("Property Transfer Rejcted")
+		return shim.Success([]byte("Property Transfer Rejected"))
 	} else {
-		return shim.Error("Property Transfer Rejct Failed")
+		return shim.Error("Property Transfer Reject Failed")
 	}
 }
 
