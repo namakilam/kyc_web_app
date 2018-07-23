@@ -12,9 +12,11 @@ import com.datamonk.blockchain.hyperledger.exceptions.InconsistentProposalRespon
 import com.datamonk.blockchain.hyperledger.exceptions.InvalidNumberArgumentException;
 import com.datamonk.blockchain.hyperledger.exceptions.NotEnoughEndorsersException;
 import com.datamonk.blockchain.hyperledger.exceptions.QueryResultFailureException;
+import com.datamonk.blockchain.webapi.enums.TransactionStatus;
 import com.datamonk.blockchain.webapi.pojo.Asset;
 import com.datamonk.blockchain.webapi.pojo.ChainCodeIDPojo;
 import com.datamonk.blockchain.webapi.pojo.KYCUser;
+import com.datamonk.blockchain.webapi.pojo.UserTransaction;
 import com.datamonk.blockchain.webapi.requests.APIRequest;
 import com.google.protobuf.ByteString;
 import org.apache.commons.codec.binary.Hex;
@@ -101,6 +103,8 @@ public class ChainService {
     private static final String PROPERTY_HISTORY_METHOD_KEY = "readHistoryFromLedger";
     private static final String RETRIEVE_METHOD_KEY = "retrieve";
     private static final String INSERT_METHOD_KEY = "insert";
+    private static final String ADD_TRANSACTION_METHOD_KEY = "addTransaction";
+    private static final String UPDATE_TRANSACTION_STATUS_KEY = "updateStatusForTransaction";
     private static final String RESULT_KEY = "result";
     private static final String APPROVE_TRANSFER_PROPERTY_METHOD_KEY = "approveTransferRequest";
     private static final String TRANSACTION_ID_KEY = "transaction_id";
@@ -254,7 +258,7 @@ public class ChainService {
         if (failed.size() > 0) {
             ProposalResponse first = failed.iterator().next();
             out("Not enough endorsers for instantiate :" + successful.size() + "endorser failed with " + first.getMessage() + ". Was verified:" + first.isVerified());
-            throw new NotEnoughEndorsersException();
+            throw new NotEnoughEndorsersException("Not enough endorsers for instantiate :" + successful.size() + "endorser failed with " + first.getMessage() + ". Was verified:" + first.isVerified());
         }
 
 
@@ -312,7 +316,7 @@ public class ChainService {
         if (failed.size() > 0) {
             ProposalResponse first = failed.iterator().next();
             out("Not enough endorsers for install :" + successful.size() + ".  " + first.getMessage());
-            throw new NotEnoughEndorsersException();
+            throw new NotEnoughEndorsersException("Not enough endorsers for install :" + successful.size() + ".  " + first.getMessage());
         }
         return chaincodeId;
     }
@@ -518,6 +522,38 @@ public class ChainService {
         return processQueryRequest(queryByChaincodeRequest);
     }
 
+    public Map<String, Object> addTransactionForUser(String userId, UserTransaction transaction) throws org.hyperledger.fabric.sdk.exception.InvalidArgumentException, InconsistentProposalResponseException, NotEnoughEndorsersException, ExecutionException, IOException, InterruptedException, ProposalException {
+        TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
+        transactionProposalRequest.setChaincodeID(kycChaincodeId);
+        transactionProposalRequest.setFcn("invoke");
+        transactionProposalRequest.setProposalWaitTime(config.getProposalWaitTime());
+        transactionProposalRequest.setArgs(new String[]{ADD_TRANSACTION_METHOD_KEY, userId, UserTransaction.toJsonString(transaction)});
+
+        Map<String, byte[]> tm2 = new HashMap<>();
+        tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
+        tm2.put("method", "TransactionProposalRequest".getBytes(UTF_8));
+
+        transactionProposalRequest.setTransientMap(tm2);
+
+        return processTransactionRequest(transactionProposalRequest);
+    }
+
+    public Map<String, Object> updateTransactionStatus(String userId, UserTransaction transaction) throws org.hyperledger.fabric.sdk.exception.InvalidArgumentException, InconsistentProposalResponseException, NotEnoughEndorsersException, ExecutionException, IOException, InterruptedException, ProposalException {
+        TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
+        transactionProposalRequest.setChaincodeID(kycChaincodeId);
+        transactionProposalRequest.setFcn("invoke");
+        transactionProposalRequest.setProposalWaitTime(config.getProposalWaitTime());
+        transactionProposalRequest.setArgs(new String[]{UPDATE_TRANSACTION_STATUS_KEY, userId, transaction.getFromId(), transaction.getToId(), transaction.getPropertyId(), transaction.getTransactionStatus().toString()});
+
+        Map<String, byte[]> tm2 = new HashMap<>();
+        tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
+        tm2.put("method", "TransactionProposalRequest".getBytes(UTF_8));
+
+        transactionProposalRequest.setTransientMap(tm2);
+
+        return processTransactionRequest(transactionProposalRequest);
+    }
+
     public Map<String, Object> historyDataFromLedgerProperty(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, QueryResultFailureException, ProposalException, FailedQueryProposalException {
         if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 1) {
             throw new InvalidNumberArgumentException(1, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
@@ -657,7 +693,7 @@ public class ChainService {
         return processQueryRequest(queryByChaincodeRequest);
     }
 
-    public Map<String, Object> propertyTransferRequest(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, FailedQueryProposalException, ProposalException, QueryResultFailureException, InterruptedException, ExecutionException, InconsistentProposalResponseException, NotEnoughEndorsersException, UnsupportedEncodingException {
+    public Map<String, Object> propertyTransferRequest(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, FailedQueryProposalException, ProposalException, QueryResultFailureException, InterruptedException, ExecutionException, InconsistentProposalResponseException, NotEnoughEndorsersException, IOException {
         if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() < 3) {
             throw new InvalidNumberArgumentException(3, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
@@ -717,6 +753,20 @@ public class ChainService {
         transactionProposalRequest.setTransientMap(tm2);
 
         return processTransactionRequest(transactionProposalRequest);
+
+        /*if (response != null) {
+            UserTransaction userTransaction = new UserTransaction();
+            userTransaction.setFromId(currOwnerId);
+            userTransaction.setToId(newOwnerId);
+            userTransaction.setPropertyId(propertyId);
+            userTransaction.setTransactionStatus(TransactionStatus.PENDING);
+
+            addTransactionForUser(currOwnerId, userTransaction);
+            addTransactionForUser(newOwnerId, userTransaction);
+            return response;
+        } else {
+            throw new NotEnoughEndorsersException("Transfer Property Request Failed");
+        }*/
     }
 
     public Map<String, Object> acceptPropertyTransferRequest(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, FailedQueryProposalException, ProposalException, InterruptedException, ExecutionException, InconsistentProposalResponseException, NotEnoughEndorsersException, UnsupportedEncodingException {
@@ -746,6 +796,7 @@ public class ChainService {
 
         String propertyId = request.getRequestParams().getCtorMsg().getArgs().get(0);
         String approver = request.getRequestParams().getCtorMsg().getArgs().get(1);
+        TransactionStatus status = TransactionStatus.valueOf(request.getRequestParams().getCtorMsg().getArgs().get(2));
 
         TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
         transactionProposalRequest.setFcn("invoke");
@@ -764,7 +815,7 @@ public class ChainService {
 
         for (ProposalResponse response : transactionProposalResponse) {
             if (response.getStatus() == ProposalResponse.Status.FAILURE) {
-                throw new NotEnoughEndorsersException();
+                throw new NotEnoughEndorsersException(response.getProposalResponse().getResponse().getMessage());
             }
         }
 
