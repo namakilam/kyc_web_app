@@ -399,16 +399,18 @@ func (t *SimpleChaincode) updateStatusForTransaction(stub shim.ChaincodeStubInte
 	var customer Customer
 	err = json.Unmarshal(customerInfo, &customer)
 	update := false
-
-	for _, transaction := range customer.PastTransactions {
+	itemIndex := 0
+	for index, transaction := range customer.PastTransactions {
 		if transaction.AssetId == args[1] {
-			transaction.Status = args[2]
+			//transaction.Status = args[2]
+			itemIndex = index
 			update = true
 			break
 		}
 	}
 
 	if update == true {
+		customer.PastTransactions[itemIndex].Status = args[2]
 		value, err := json.Marshal(customer)
 		err = stub.PutState(key, value)
 		if err != nil {
