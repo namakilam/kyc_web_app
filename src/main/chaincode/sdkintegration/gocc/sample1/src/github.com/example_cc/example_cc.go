@@ -384,7 +384,7 @@ func (t *SimpleChaincode) addTransactionToUser(stub shim.ChaincodeStubInterface,
 }
 
 func (t *SimpleChaincode) updateStatusForTransaction(stub shim.ChaincodeStubInterface, args[] string) pb.Response {
-	if len(args) != 6 {
+	if len(args) != 3 {
 		return shim.Error("Incorrect Number of Arguments. Required : 4")
 	}
 
@@ -401,8 +401,8 @@ func (t *SimpleChaincode) updateStatusForTransaction(stub shim.ChaincodeStubInte
 	update := false
 
 	for _, transaction := range customer.PastTransactions {
-		if transaction.FromId == args[1] && transaction.ToId == args[2] && transaction.AssetId == args[3] {
-			transaction.Status = args[4]
+		if transaction.AssetId == args[1] {
+			transaction.Status = args[2]
 			update = true
 			break
 		}

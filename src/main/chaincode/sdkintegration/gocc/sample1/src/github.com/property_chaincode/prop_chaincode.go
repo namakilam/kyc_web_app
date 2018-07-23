@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
-	"github.com/hyperledger/fabric/common/util"
 	pb "github.com/hyperledger/fabric/protos/peer"
 	"encoding/json"
 	"strings"
@@ -41,9 +40,11 @@ type Asset struct {
 }
 
 type PropertySplitSuccessResponse struct {
-	Result   string `json:"result"`
-	ParentId string `json:"parentId"`
-	Children []string `json:"children"`
+	Result    string `json:"result"`
+	PrevOwner string `json:"prevOwner"`
+	NewOwner  string `json:"newOwner"`
+	ParentId  string `json:"parentId"`
+	Children  []string `json:"children"`
 }
 
 type PropertyTransferSuccessResponse struct {
@@ -156,35 +157,10 @@ func (t *PropertyChaincode) rejectTransferRequest(stub shim.ChaincodeStubInterfa
 		return shim.Error("No Transfer Request Found")
 	}
 
-	if asset.PropertyTransferRequest.SplitSize != 0 {
-		chainCodeArgs := util.ToChaincodeArgs("updateStatusForTransaction", asset.Owner, asset.Owner, asset.Owner, propertyId + "/1", "REJECT")
-		response = stub.InvokeChaincode("kyc_cc", chainCodeArgs, "mychannel")
-
-		if response.Status != 200 {
-			return shim.Error("Transaction couldn't be updated")
-		}
-
-		chainCodeArgs = util.ToChaincodeArgs("updateStatusForTransaction", asset.PropertyTransferRequest.NewOwnerId, asset.Owner, asset.PropertyTransferRequest.NewOwnerId, propertyId + "/2", "REJECT")
-		stub.InvokeChaincode("kyc_cc", chainCodeArgs, "mychannel")
-
-		if response.Status != 200 {
-			return shim.Error("Transaction couldn't be updated")
-		}
-	} else {
-		chainCodeArgs := util.ToChaincodeArgs("updateStatusForTransaction", asset.Owner, asset.Owner, asset.PropertyTransferRequest.NewOwnerId, propertyId, "REJECT")
-		response = stub.InvokeChaincode("kyc_cc", chainCodeArgs, "mychannel")
-
-		if response.Status != 200 {
-			return shim.Error("Transaction couldn't be updated")
-		}
-
-		chainCodeArgs = util.ToChaincodeArgs("updateStatusForTransaction", asset.PropertyTransferRequest.NewOwnerId, asset.Owner, asset.PropertyTransferRequest.NewOwnerId, propertyId, "REJECT")
-		stub.InvokeChaincode("kyc_cc", chainCodeArgs, "mychannel")
-
-		if response.Status != 200 {
-			return shim.Error("Transaction couldn't be updated")
-		}
-	}
+	var webResponse PropertyTransferSuccessResponse
+	webResponse.Result = "Property Transfer Rejected"
+	webResponse.NewOwner = asset.PropertyTransferRequest.NewOwnerId
+	webResponse.PrevOwner = asset.Owner
 
 	var transferRequest PropertyTransferRequest
 	asset.PropertyTransferRequest = transferRequest
@@ -193,11 +169,8 @@ func (t *PropertyChaincode) rejectTransferRequest(stub shim.ChaincodeStubInterfa
 
 	err = stub.PutState(key, value)
 
-	if err != nil {
-		return shim.Success([]byte("Property Transfer Rejected"))
-	} else {
-		return shim.Error("Property Transfer Reject Failed")
-	}
+	value, err = json.Marshal(webResponse)
+	return shim.Success(value)
 }
 
 func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response {
@@ -314,7 +287,7 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 			}
 		}
 
-		chainCodeArgs := util.ToChaincodeArgs("updateStatusForTransaction", prevOwner, prevOwner, asset.Owner, propertyId, "SUCCESS")
+		/*chainCodeArgs := util.ToChaincodeArgs("updateStatusForTransaction", prevOwner, prevOwner, asset.Owner, propertyId, "SUCCESS")
 		response = stub.InvokeChaincode("kyc_cc", chainCodeArgs, "mychannel")
 
 		if response.Status != 200 {
@@ -326,7 +299,7 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 
 		if response.Status != 200 {
 			return shim.Error("Transaction couldn't be updated")
-		}
+		}*/
 
 		var response PropertyTransferSuccessResponse
 		response.Result = "Property Transfer Sucess"
@@ -432,7 +405,7 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 			return shim.Error("Could Not Approve Transfer")
 		}
 
-		chainCodeArgs := util.ToChaincodeArgs("updateStatusForTransaction", asset1.Owner, asset1.Owner, asset1.Owner, asset1.Id, "SUCCESS")
+		/*chainCodeArgs := util.ToChaincodeArgs("updateStatusForTransaction", asset1.Owner, asset1.Owner, asset1.Owner, asset1.Id, "SUCCESS")
 		response = stub.InvokeChaincode("kyc_cc", chainCodeArgs, "mychannel")
 
 		if response.Status != 200 {
@@ -444,10 +417,12 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 
 		if response.Status != 200 {
 			return shim.Error("Transaction couldn't be updated")
-		}
+		}*/
 
 		var response PropertySplitSuccessResponse
 		response.Result = "Property Transfer Sucess"
+		response.PrevOwner = asset1.Owner
+		response.NewOwner = asset2.Owner
 		response.ParentId = asset.Id
 		response.Children = append(response.Children, asset1.Id)
 		response.Children = append(response.Children, asset2.Id)
@@ -455,7 +430,6 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 		return shim.Success(value)
 		//return shim.Success([]byte("Property Transfer Sucess"))
 	}
-
 }
 
 func (t *PropertyChaincode) acceptTransferRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response {
@@ -620,7 +594,7 @@ func (t *PropertyChaincode) transferPropertyRequestByPart(stub shim.ChaincodeStu
 		return shim.Error(err.Error())
 	}
 
-	chainCodeArgs := util.ToChaincodeArgs("addTransaction", ownerId, ownerId, ownerId, propertyId + "/1", "PENDING")
+	/*chainCodeArgs := util.ToChaincodeArgs("addTransaction", ownerId, ownerId, ownerId, propertyId + "/1", "PENDING")
 	response = stub.InvokeChaincode("kyc_cc", chainCodeArgs, "mychannel")
 
 	if response.Status != 200 {
@@ -632,7 +606,7 @@ func (t *PropertyChaincode) transferPropertyRequestByPart(stub shim.ChaincodeStu
 
 	if response.Status != 200 {
 		return shim.Error("Transaction couldn't be added to user")
-	}
+	}*/
 
 	return shim.Success([]byte("Transfer Request Successfully Created"))
 }
@@ -699,7 +673,7 @@ func (t *PropertyChaincode) transferPropertyRequest(stub shim.ChaincodeStubInter
 		return shim.Error(err.Error())
 	}
 
-	chainCodeArgs := util.ToChaincodeArgs("addTransaction", ownerId, ownerId, args[2], propertyId, "PENDING")
+	/*chainCodeArgs := util.ToChaincodeArgs("addTransaction", ownerId, ownerId, args[2], propertyId, "PENDING")
 	response = stub.InvokeChaincode("kyc_cc", chainCodeArgs, "mychannel")
 
 	if response.Status != 200 {
@@ -711,7 +685,7 @@ func (t *PropertyChaincode) transferPropertyRequest(stub shim.ChaincodeStubInter
 
 	if response.Status != 200 {
 		return shim.Error("Transaction couldn't be added to user")
-	}
+	}*/
 
 	return shim.Success([]byte("Transfer Request Successfully Created"))
 }

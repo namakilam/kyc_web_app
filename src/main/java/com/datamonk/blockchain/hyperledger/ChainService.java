@@ -111,6 +111,7 @@ public class ChainService {
     private static final String BLOCK_NUMBER_KEY = "block";
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final String REJECT_TRANSFER_PROPERTY_METHOD_KEY = "rejectTransferRequest";
 
     private HFClient client;
     private Channel kycChannel;
@@ -527,7 +528,7 @@ public class ChainService {
         transactionProposalRequest.setChaincodeID(kycChaincodeId);
         transactionProposalRequest.setFcn("invoke");
         transactionProposalRequest.setProposalWaitTime(config.getProposalWaitTime());
-        transactionProposalRequest.setArgs(new String[]{ADD_TRANSACTION_METHOD_KEY, userId, UserTransaction.toJsonString(transaction)});
+        transactionProposalRequest.setArgs(new String[]{ADD_TRANSACTION_METHOD_KEY, userId, transaction.getFromId(), transaction.getToId(), transaction.getPropertyId(), transaction.getTransactionStatus().toString()});
 
         Map<String, byte[]> tm2 = new HashMap<>();
         tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
@@ -752,9 +753,9 @@ public class ChainService {
         tm2.put("method", "TransactionProposalRequest".getBytes(UTF_8));
         transactionProposalRequest.setTransientMap(tm2);
 
-        return processTransactionRequest(transactionProposalRequest);
+        Map<String, Object> response = processTransactionRequest(transactionProposalRequest);
 
-        /*if (response != null) {
+        if (response != null) {
             UserTransaction userTransaction = new UserTransaction();
             userTransaction.setFromId(currOwnerId);
             userTransaction.setToId(newOwnerId);
@@ -766,7 +767,7 @@ public class ChainService {
             return response;
         } else {
             throw new NotEnoughEndorsersException("Transfer Property Request Failed");
-        }*/
+        }
     }
 
     public Map<String, Object> acceptPropertyTransferRequest(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, FailedQueryProposalException, ProposalException, InterruptedException, ExecutionException, InconsistentProposalResponseException, NotEnoughEndorsersException, UnsupportedEncodingException {
@@ -794,20 +795,61 @@ public class ChainService {
             throw new InvalidNumberArgumentException(2, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
 
+
         String propertyId = request.getRequestParams().getCtorMsg().getArgs().get(0);
         String approver = request.getRequestParams().getCtorMsg().getArgs().get(1);
-        TransactionStatus status = TransactionStatus.valueOf(request.getRequestParams().getCtorMsg().getArgs().get(2));
+        String decision = request.getRequestParams().getCtorMsg().getArgs().get(2);
+        Map<String, Object> response = null;
+        TransactionStatus transactionStatus = null;
 
-        TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
-        transactionProposalRequest.setFcn("invoke");
-        transactionProposalRequest.setArgs(new String[]{APPROVE_TRANSFER_PROPERTY_METHOD_KEY, propertyId, approver});
-        transactionProposalRequest.setChaincodeID(propertyChaincodeId);
-        Map<String, byte[]> tm2 = new HashMap<>();
-        tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
-        tm2.put("method", "TransactionProposalRequest".getBytes(UTF_8));
-        transactionProposalRequest.setTransientMap(tm2);
+        if (Objects.equals(decision, "SUCCESS")) {
+            transactionStatus = TransactionStatus.SUCCESS;
+            TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
+            transactionProposalRequest.setFcn("invoke");
+            transactionProposalRequest.setArgs(new String[]{APPROVE_TRANSFER_PROPERTY_METHOD_KEY, propertyId, approver});
+            transactionProposalRequest.setChaincodeID(propertyChaincodeId);
+            Map<String, byte[]> tm2 = new HashMap<>();
+            tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
+            tm2.put("method", "TransactionProposalRequest".getBytes(UTF_8));
+            transactionProposalRequest.setTransientMap(tm2);
 
-        return processTransactionRequest(transactionProposalRequest);
+            response = processTransactionRequest(transactionProposalRequest);
+        } else {
+            transactionStatus = TransactionStatus.REJECTED;
+            TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
+            transactionProposalRequest.setFcn("invoke");
+            transactionProposalRequest.setArgs(new String[]{REJECT_TRANSFER_PROPERTY_METHOD_KEY, propertyId, approver});
+            transactionProposalRequest.setChaincodeID(propertyChaincodeId);
+            Map<String, byte[]> tm2 = new HashMap<>();
+            tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
+            tm2.put("method", "TransactionProposalRequest".getBytes(UTF_8));
+            transactionProposalRequest.setTransientMap(tm2);
+
+            response = processTransactionRequest(transactionProposalRequest);
+        }
+
+        if (response != null
+                && response.containsKey("result")
+                && ((Map<String, Object>) response.get("result")).containsKey("result")) {
+            String payloadString = (String) ((Map<String, Object>) response.get("result")).get("result");
+
+            try {
+                Map<String, Object> payload = objectMapper.readValue(payloadString, Map.class);
+                String prevOwner = (String) payload.get("prevOwner");
+                String newOwner = (String) payload.get("newOwner");
+                UserTransaction userTransaction = new UserTransaction();
+                userTransaction.setToId(newOwner);
+                userTransaction.setFromId(prevOwner);
+                userTransaction.setPropertyId(propertyId);
+                userTransaction.setTransactionStatus(transactionStatus);
+                updateTransactionStatus(newOwner, userTransaction);
+                updateTransactionStatus(prevOwner, userTransaction);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return response;
     }
 
     private Map<String, Object> processTransactionRequest(TransactionProposalRequest request) throws NotEnoughEndorsersException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, ProposalException, InconsistentProposalResponseException, ExecutionException, InterruptedException, UnsupportedEncodingException {
