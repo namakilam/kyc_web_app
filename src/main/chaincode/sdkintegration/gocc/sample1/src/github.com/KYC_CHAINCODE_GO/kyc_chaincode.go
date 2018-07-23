@@ -53,6 +53,7 @@ func (t *SimpleChainCode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 
 func (t *SimpleChainCode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	function, args := stub.GetFunctionAndParameters()
+	fmt.Println("")
 
 	switch function {
 	case "insert":

@@ -31,22 +31,30 @@ type SimpleChaincode struct {
 
 type Address struct {
 	Address_Line string `json:"address_line"`
-	City string `json:"city"`
+	City         string `json:"city"`
+}
+
+type Transaction struct {
+	FromId  string `json:"fromId"`
+	ToId    string `json:"toId"`
+	AssetId string `json:"assetId"`
+	Status  string `json:"status"`
 }
 
 type Customer struct {
-	Name string `json:"name"`
-	Gender string `json:"gender"`
-	DOB string `json:"dob"`
-	Aadhar string `json:"aadhar_no"`
-	Address Address `json:"address"`
-	PAN string `json:"pan_no"`
-	Cibil_Score int32 `json:"cibil_score"`
-	Marital_Status string `json:"marital_status"`
-	Education map[string]string `json:"education"`
-	Employement map[string]string `json:"employement"`
-	Health map[string]string `json:"health"`
-	Possesions map[string]string `json:"possesions"`
+	Name             string `json:"name"`
+	Gender           string `json:"gender"`
+	DOB              string `json:"dob"`
+	Aadhar           string `json:"aadhar_no"`
+	Address          Address `json:"address"`
+	PAN              string `json:"pan_no"`
+	Cibil_Score      int32 `json:"cibil_score"`
+	Marital_Status   string `json:"marital_status"`
+	Education        map[string]string `json:"education"`
+	Employement      map[string]string `json:"employement"`
+	Health           map[string]string `json:"health"`
+	Possesions       map[string]string `json:"possesions"`
+	PastTransactions []Transaction`json:"pastTransactions"`
 }
 
 // Init initializes the chaincode state
@@ -95,6 +103,12 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	if args[0] == "history" {
 		// Deletes an entity from its state
 		return t.readHistoryFromLedger(stub, args)
+	}
+	if args[0] == "addTransaction" {
+		return t.addTransactionToUser(stub, args)
+	}
+	if args[0] == "updateStatusForTransaction" {
+		return t.updateStatusForTransaction(stub, args)
 	}
 	return shim.Error("Unknown action, check the first argument")
 }
@@ -207,7 +221,6 @@ func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface, args []string)
 	return shim.Success(Avalbytes)
 }
 
-
 func (t *SimpleChaincode) updateDataIntoLedger(stub shim.ChaincodeStubInterface, args[] string) pb.Response {
 	if len(args) != 3 {
 		return shim.Error("Incorrect Number of Arguments. Required : 2")
@@ -267,7 +280,7 @@ func (t *SimpleChaincode) readHistoryFromLedger(stub shim.ChaincodeStubInterface
 			var customer Customer
 			err = json.Unmarshal(alters.Value, &customer)
 			if err == nil {
-				history =  append(history, customer)
+				history = append(history, customer)
 			}
 		}
 	}
@@ -302,7 +315,7 @@ func (t *SimpleChaincode) readDataFromLedger(stub shim.ChaincodeStubInterface, a
 	return shim.Success(customerInfo)
 }
 
-func (t * SimpleChaincode) insertDataIntoLedger(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *SimpleChaincode) insertDataIntoLedger(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 2 {
 		return shim.Error("Incorrect Number of Arguments. Required : 1")
 	}
@@ -329,7 +342,82 @@ func (t * SimpleChaincode) insertDataIntoLedger(stub shim.ChaincodeStubInterface
 	return shim.Success([]byte("Insert Success"))
 }
 
+func (t *SimpleChaincode) addTransactionToUser(stub shim.ChaincodeStubInterface, args[] string) pb.Response {
+	if len(args) != 6 {
+		return shim.Error("Incorrect Number of Arguments. Required : 2")
+	}
 
+	args = args[1:]
+	key := args[0]
+	fromId := args[1]
+	toId := args[2]
+	assetId := args[3]
+	status := args[4]
+
+	customerInfo, err := stub.GetState(key)
+	var customer Customer
+	var transaction Transaction
+	transaction.FromId = fromId
+	transaction.ToId = toId
+	transaction.AssetId = assetId
+	transaction.Status = status
+
+	if err != nil {
+		return shim.Error("Entry For Key not found in the ledger!")
+	}
+	err = json.Unmarshal(customerInfo, &customer)
+
+	if err != nil {
+		return shim.Error("Unable to parse Customer String. Please ensure a valid JSON.")
+	}
+
+	customer.PastTransactions = append(customer.PastTransactions, transaction)
+
+	value, err := json.Marshal(customer)
+
+	err = stub.PutState(key, value)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success([]byte("Trasaction Added"))
+}
+
+func (t *SimpleChaincode) updateStatusForTransaction(stub shim.ChaincodeStubInterface, args[] string) pb.Response {
+	if len(args) != 6 {
+		return shim.Error("Incorrect Number of Arguments. Required : 4")
+	}
+
+	args = args[1:]
+	key := args[0]
+	customerInfo, err := stub.GetState(key)
+
+	if err != nil {
+		return shim.Error("Entry for given key not found!. Please insert into the ledger first.")
+	}
+
+	var customer Customer
+	err = json.Unmarshal(customerInfo, &customer)
+	update := false
+
+	for _, transaction := range customer.PastTransactions {
+		if transaction.FromId == args[1] && transaction.ToId == args[2] && transaction.AssetId == args[3] {
+			transaction.Status = args[4]
+			update = true
+			break
+		}
+	}
+
+	if update == true {
+		value, err := json.Marshal(customer)
+		err = stub.PutState(key, value)
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+		return shim.Success([]byte("Trasaction Updated"))
+	} else {
+		return shim.Error("No such Transaction Present For User")
+	}
+}
 
 func main() {
 	err := shim.Start(new(SimpleChaincode))

@@ -83,7 +83,7 @@ public class ChainService {
     private static final String TEST_FIXTURES_PATH = "/home/ubuntu/workspace/src/github.com/hyperledger/fabric/examples/e2e_cli";
     private static final String CHAIN_CODE_NAME = "kyc_cc";
     private static final String CHAIN_CODE_PATH = "github.com/example_cc";
-    private static final String CHAIN_CODE_VERSION = "2.3.7";
+    private static final String CHAIN_CODE_VERSION = "2.3.8";
     private static final String PROPERTY_CHAIN_CODE_NAME = "property_cc";
     private static final String PROPERTY_CHAIN_CODE_PATH = "github.com/property_chaincode";
     private static final String PROPERTY_CHAIN_CODE_VERSION = "2.6.1";
@@ -815,7 +815,7 @@ public class ChainService {
 
         for (ProposalResponse response : transactionProposalResponse) {
             if (response.getStatus() == ProposalResponse.Status.FAILURE) {
-                throw new NotEnoughEndorsersException(response.getProposalResponse().getResponse().getMessage());
+                throw new NotEnoughEndorsersException(response.getMessage());
             }
         }
 
