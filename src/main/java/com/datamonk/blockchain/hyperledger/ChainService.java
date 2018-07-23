@@ -830,9 +830,8 @@ public class ChainService {
         }
 
         if (response != null
-                && response.containsKey("result")
-                && ((Map<String, Object>) response.get("result")).containsKey("result")) {
-            String payloadString = (String) ((Map<String, Object>) response.get("result")).get("result");
+                && response.containsKey("result")) {
+            String payloadString = (String) response.get("result");
 
             try {
                 Map<String, Object> payload = objectMapper.readValue(payloadString, Map.class);
