@@ -186,8 +186,18 @@ func (t *PropertyChaincode) rejectTransferRequest(stub shim.ChaincodeStubInterfa
 		}
 	}
 
-	&asset.PropertyTransferRequest = nil
-	return shim.Success("Property Transfer Rejcted")
+	var transferRequest PropertyTransferRequest
+	asset.PropertyTransferRequest = transferRequest
+
+	value, err := json.Marshal(asset)
+
+	err = stub.PutState(key, value)
+
+	if err != nil {
+		return shim.Success("Property Transfer Rejcted")
+	} else {
+		return shim.Error("Property Transfer Rejct Failed")
+	}
 }
 
 func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response {
