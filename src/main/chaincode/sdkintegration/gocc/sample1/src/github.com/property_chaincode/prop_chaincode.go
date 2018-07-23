@@ -721,7 +721,7 @@ func (t *PropertyChaincode) readHistoryFromLedger(stub shim.ChaincodeStubInterfa
 		return shim.Error("Incorrect Number of Arguments. Required : 2")
 	}
 
-	args = args[1]
+	args = args[1:]
 	key := args[0]
 	historyItr, err := stub.GetHistoryForKey(key)
 
