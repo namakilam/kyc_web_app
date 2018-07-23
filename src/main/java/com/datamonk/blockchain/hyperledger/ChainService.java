@@ -544,7 +544,7 @@ public class ChainService {
         transactionProposalRequest.setChaincodeID(kycChaincodeId);
         transactionProposalRequest.setFcn("invoke");
         transactionProposalRequest.setProposalWaitTime(config.getProposalWaitTime());
-        transactionProposalRequest.setArgs(new String[]{UPDATE_TRANSACTION_STATUS_KEY, userId, transaction.getFromId(), transaction.getToId(), transaction.getPropertyId(), transaction.getTransactionStatus().toString()});
+        transactionProposalRequest.setArgs(new String[]{UPDATE_TRANSACTION_STATUS_KEY, userId, transaction.getPropertyId(), transaction.getTransactionStatus().toString()});
 
         Map<String, byte[]> tm2 = new HashMap<>();
         tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
