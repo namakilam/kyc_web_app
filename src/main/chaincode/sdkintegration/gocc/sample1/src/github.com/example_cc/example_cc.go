@@ -346,7 +346,7 @@ func (t *SimpleChaincode) addTransactionToUser(stub shim.ChaincodeStubInterface,
 	if len(args) != 6 {
 		return shim.Error("Incorrect Number of Arguments. Required : 2")
 	}
-
+	fmt.Println("Stage 1")
 	args = args[1:]
 	key := args[0]
 	fromId := args[1]
@@ -361,7 +361,7 @@ func (t *SimpleChaincode) addTransactionToUser(stub shim.ChaincodeStubInterface,
 	transaction.ToId = toId
 	transaction.AssetId = assetId
 	transaction.Status = status
-
+	fmt.Println("Stage 2")
 	if err != nil {
 		return shim.Error("Entry For Key not found in the ledger!")
 	}
@@ -370,15 +370,16 @@ func (t *SimpleChaincode) addTransactionToUser(stub shim.ChaincodeStubInterface,
 	if err != nil {
 		return shim.Error("Unable to parse Customer String. Please ensure a valid JSON.")
 	}
-
+	fmt.Println("Stage 3")
 	customer.PastTransactions = append(customer.PastTransactions, transaction)
 
 	value, err := json.Marshal(customer)
-
+	fmt.Println("Stage 4")
 	err = stub.PutState(key, value)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
+	fmt.Println("Stage 5")
 	return shim.Success([]byte("Trasaction Added"))
 }
 
