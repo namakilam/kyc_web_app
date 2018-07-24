@@ -22,14 +22,16 @@ type Approver struct {
 type PropertyTransferRequest struct {
 	NewOwnerId    string `json:"new_owner_id"`
 	Accepted      bool `json:"accepted"`
-	SplitSize     int `json:"split_size"`
+	SplitLength   int `json:"split_length"`
+	SplitWidth    int `json:"split_width"`
 	Authorization []Approver `json:"authorizers"`
 }
 
 type Asset struct {
 	Id                      string`json:"id"`
 	Type                    string `json:"type"`
-	Area                    int `json:"area"`
+	Length                  int `json:"length"`
+	Width                   int `json:"width"`
 	Address                 Address `json:"address"`
 	Owner                   string `json:"owner"`
 	PropertyTransferRequest PropertyTransferRequest `json:"property_transfer_request"`
@@ -240,7 +242,7 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 	/**
 		Old Logic Without the Split Property Logic
 	 */
-	if asset.PropertyTransferRequest.SplitSize == 0 {
+	if asset.PropertyTransferRequest.SplitLength == 0 || asset.PropertyTransferRequest.SplitWidth == 0 {
 		asset.Owner = asset.PropertyTransferRequest.NewOwnerId
 		asset.PropertyTransferRequest.NewOwnerId = ""
 		asset.PropertyTransferRequest.Accepted = false
@@ -319,8 +321,10 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 		asset1.Id = strings.Join([]string{asset1.Id, "1"}, "/")
 		asset2.Id = strings.Join([]string{asset2.Id, "2"}, "/")
 
-		asset2.Area = asset.PropertyTransferRequest.SplitSize
-		asset1.Area -= asset2.Area
+		asset2.Length = asset.PropertyTransferRequest.SplitLength
+		asset2.Width = asset.PropertyTransferRequest.SplitWidth
+		asset1.Length -= asset2.Length
+		asset1.Width -= asset2.Width
 
 		asset2.Owner = asset.PropertyTransferRequest.NewOwnerId
 
@@ -331,13 +335,15 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 
 		asset1.PropertyTransferRequest.NewOwnerId = ""
 		asset1.PropertyTransferRequest.Accepted = false
-		asset1.PropertyTransferRequest.SplitSize = 0
+		asset1.PropertyTransferRequest.SplitWidth = 0
+		asset1.PropertyTransferRequest.SplitLength = 0
 		asset1.ApprovedBy = asset1.PropertyTransferRequest.Authorization
 		asset1.PropertyTransferRequest.Authorization = make([]Approver, 0)
 
 		asset2.PropertyTransferRequest.NewOwnerId = ""
 		asset2.PropertyTransferRequest.Accepted = false
-		asset2.PropertyTransferRequest.SplitSize = 0
+		asset2.PropertyTransferRequest.SplitWidth = 0
+		asset2.PropertyTransferRequest.SplitLength = 0
 		asset2.ApprovedBy = asset1.PropertyTransferRequest.Authorization
 		asset2.PropertyTransferRequest.Authorization = make([]Approver, 0)
 
@@ -517,7 +523,7 @@ func (t *PropertyChaincode) acceptTransferRequest(stub shim.ChaincodeStubInterfa
 }
 
 func (t *PropertyChaincode) transferPropertyRequestByPart(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	if len(args) != 5 {
+	if len(args) != 6 {
 		return shim.Error("Incorrect Number of Arguments.")
 	}
 
@@ -525,7 +531,8 @@ func (t *PropertyChaincode) transferPropertyRequestByPart(stub shim.ChaincodeStu
 	propertyId := args[0]
 	ownerId := args[1]
 	newOwnerId := args[2]
-	splitSize := args[3]
+	splitLength := args[3]
+	splitWidth := args[4]
 
 	response := t.getPropertyById(stub, []string{"getById", propertyId})
 
@@ -550,23 +557,26 @@ func (t *PropertyChaincode) transferPropertyRequestByPart(stub shim.ChaincodeStu
 		return shim.Error("Requesting Owner not the Owner of the property")
 	}
 
-	propArea := asset.Area
-	splitArea, err := strconv.Atoi(splitSize)
+	propLen := asset.Length
+	propWth := asset.Width
+	splitLen, err := strconv.Atoi(splitLength)
+	splitWdth, err := strconv.Atoi(splitWidth)
 
 	if err != nil {
 		return shim.Error("Invalid Split Size")
 	}
 
-	if propArea < splitArea {
+	if propLen < splitLen || propWth < splitWdth {
 		return shim.Error("Split Size cannot be greater than property size")
-	} else if propArea == splitArea {
+	} else if propLen == splitLen && propWth == splitWdth {
 		return t.transferPropertyRequest(stub, []string{"transferRequest", propertyId, ownerId, newOwnerId})
 	}
 
 	var transferPropertyRequest PropertyTransferRequest
 	transferPropertyRequest.NewOwnerId = newOwnerId
 	transferPropertyRequest.Accepted = false
-	transferPropertyRequest.SplitSize = splitArea
+	transferPropertyRequest.SplitLength = splitLen
+	transferPropertyRequest.SplitWidth = splitWdth
 
 	asset.PropertyTransferRequest = transferPropertyRequest
 	indexName := "compositePropertykey"
@@ -646,7 +656,8 @@ func (t *PropertyChaincode) transferPropertyRequest(stub shim.ChaincodeStubInter
 	var transferRequest PropertyTransferRequest
 	transferRequest.NewOwnerId = args[2]
 	transferRequest.Accepted = false
-	transferRequest.SplitSize = 0
+	transferRequest.SplitLength = 0
+	transferRequest.SplitWidth = 0
 
 	asset.PropertyTransferRequest = transferRequest
 	indexName := "compositePropertykey"

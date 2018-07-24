@@ -20,8 +20,11 @@ public class Asset implements Serializable {
     @JsonProperty("type")
     private AssetType assetType;
 
-    @JsonProperty("area")
-    private Integer area;
+    @JsonProperty("length")
+    private Integer length;
+
+    @JsonProperty("width")
+    private Integer width;
 
     @JsonProperty("owner")
     private String owner;
@@ -45,7 +48,8 @@ public class Asset implements Serializable {
     private Asset(Builder builder) {
         setId(builder.id);
         setAssetType(builder.assetType);
-        setArea(builder.area);
+        setLength(builder.length);
+        setWidth(builder.width);
         setOwner(builder.owner);
         setAddress(builder.address);
         setParent(builder.parent);
@@ -73,12 +77,20 @@ public class Asset implements Serializable {
         this.assetType = assetType;
     }
 
-    public Integer getArea() {
-        return area;
+    public Integer getLength() {
+        return length;
     }
 
-    public void setArea(Integer area) {
-        this.area = area;
+    public void setLength(Integer length) {
+        this.length = length;
+    }
+
+    public Integer getWidth() {
+        return width;
+    }
+
+    public void setWidth(Integer width) {
+        this.width = width;
     }
 
     public String getOwner() {
@@ -189,7 +201,8 @@ public class Asset implements Serializable {
     public static final class Builder {
         private String id;
         private AssetType assetType;
-        private Integer area;
+        private Integer length;
+        private Integer width;
         private String owner;
         private Address address;
         private String parent;
@@ -209,8 +222,13 @@ public class Asset implements Serializable {
             return this;
         }
 
-        public Builder area(Integer val) {
-            area = val;
+        public Builder length(Integer val) {
+            length = val;
+            return this;
+        }
+
+        public Builder width(Integer val) {
+            width = val;
             return this;
         }
 
