@@ -109,7 +109,7 @@ func (t *PropertyChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response
 }
 
 func (t *PropertyChaincode) rejectTransferRequest(stub shim.ChaincodeStubInterface, args[] string) pb.Response {
-	if len(args) != 2 {
+	if len(args) != 3 {
 		return shim.Error("Incorrect Number of Arguments.")
 	}
 
