@@ -695,16 +695,18 @@ public class ChainService {
     }
 
     public Map<String, Object> propertyTransferRequest(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, FailedQueryProposalException, ProposalException, QueryResultFailureException, InterruptedException, ExecutionException, InconsistentProposalResponseException, NotEnoughEndorsersException, IOException {
-        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() < 3) {
-            throw new InvalidNumberArgumentException(3, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
+        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() < 5) {
+            throw new InvalidNumberArgumentException(5, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
 
         String currOwnerId = request.getRequestParams().getCtorMsg().getArgs().get(0);
         String propertyId = request.getRequestParams().getCtorMsg().getArgs().get(1);
         String newOwnerId = request.getRequestParams().getCtorMsg().getArgs().get(2);
-        Integer splitSize = null;
+        Integer splitLength = null;
+        Integer splitWidth = null;
         if (request.getRequestParams().getCtorMsg().getArgs().size() > 3) {
-            splitSize = Integer.parseInt(request.getRequestParams().getCtorMsg().getArgs().get(3));
+            splitLength = Integer.parseInt(request.getRequestParams().getCtorMsg().getArgs().get(3));
+            splitLength = Integer.parseInt(request.getRequestParams().getCtorMsg().getArgs().get(4));
         }
 
 
@@ -740,10 +742,10 @@ public class ChainService {
 
         TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
         transactionProposalRequest.setFcn("invoke");
-        if (splitSize == null) {
+        if (splitLength == null || splitWidth == null) {
             transactionProposalRequest.setArgs(new String[]{TRANSFER_PROPERTY_METHOD_KEY, propertyId, currOwnerId, newOwnerId});
         } else {
-            transactionProposalRequest.setArgs(new String[]{TRANSFER_PROPERTY_BY_PART_METHOD_KEY, propertyId, currOwnerId, newOwnerId, splitSize.toString()});
+            transactionProposalRequest.setArgs(new String[]{TRANSFER_PROPERTY_BY_PART_METHOD_KEY, propertyId, currOwnerId, newOwnerId, splitLength.toString(), splitWidth.toString()});
         }
 
         transactionProposalRequest.setChaincodeID(propertyChaincodeId);
