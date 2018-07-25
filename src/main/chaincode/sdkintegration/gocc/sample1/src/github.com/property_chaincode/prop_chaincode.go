@@ -338,13 +338,14 @@ func (t *PropertyChaincode) approveTransferRequest(stub shim.ChaincodeStubInterf
 		asset1.PropertyTransferRequest.SplitWidth = 0
 		asset1.PropertyTransferRequest.SplitLength = 0
 		asset1.ApprovedBy = asset1.PropertyTransferRequest.Authorization
-		asset1.PropertyTransferRequest.Authorization = make([]Approver, 0)
 
 		asset2.PropertyTransferRequest.NewOwnerId = ""
 		asset2.PropertyTransferRequest.Accepted = false
 		asset2.PropertyTransferRequest.SplitWidth = 0
 		asset2.PropertyTransferRequest.SplitLength = 0
 		asset2.ApprovedBy = asset1.PropertyTransferRequest.Authorization
+
+		asset1.PropertyTransferRequest.Authorization = make([]Approver, 0)
 		asset2.PropertyTransferRequest.Authorization = make([]Approver, 0)
 
 		err = stub.DelState(key)
