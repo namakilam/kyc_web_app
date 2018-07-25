@@ -695,8 +695,8 @@ public class ChainService {
     }
 
     public Map<String, Object> propertyTransferRequest(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, FailedQueryProposalException, ProposalException, QueryResultFailureException, InterruptedException, ExecutionException, InconsistentProposalResponseException, NotEnoughEndorsersException, IOException {
-        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() < 5) {
-            throw new InvalidNumberArgumentException(5, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
+        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() < 3) {
+            throw new InvalidNumberArgumentException(3, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
 
         String currOwnerId = request.getRequestParams().getCtorMsg().getArgs().get(0);
@@ -706,7 +706,7 @@ public class ChainService {
         Integer splitWidth = null;
         if (request.getRequestParams().getCtorMsg().getArgs().size() > 3) {
             splitLength = Integer.parseInt(request.getRequestParams().getCtorMsg().getArgs().get(3));
-            splitLength = Integer.parseInt(request.getRequestParams().getCtorMsg().getArgs().get(4));
+            splitWidth = Integer.parseInt(request.getRequestParams().getCtorMsg().getArgs().get(4));
         }
 
 
