@@ -435,7 +435,7 @@ public class ChainService {
     private String extractHash(byte[] blockHash) {
         StringBuilder sb = new StringBuilder();
         for (byte b : blockHash) {
-            sb.append(String.format("%02X ", b));
+            sb.append(String.format("%02X", b));
         }
         return sb.toString();
     }
