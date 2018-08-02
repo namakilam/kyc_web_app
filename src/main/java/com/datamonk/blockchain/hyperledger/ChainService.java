@@ -423,8 +423,8 @@ public class ChainService {
 
         newChannel.registerBlockListener(blockEvent -> {
             Long blockNumber = blockEvent.getBlockNumber();
-            String blockHash = blockEvent.getBlock().getHeader().getDataHash().toStringUtf8();
-            out("New Block Mined On the Chain with blockNumber: %s, blockHash: %s", blockNumber.toString(), blockHash);
+            byte[] blockHash = blockEvent.getBlock().getHeader().getDataHash().toByteArray();
+            out("New Block Mined On the Chain with blockNumber: %s, blockHash: %s", blockNumber.toString(), Hex.encodeHex(blockHash));
         });
 
         return newChannel;
