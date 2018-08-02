@@ -20,6 +20,8 @@ import com.datamonk.blockchain.webapi.pojo.UserTransaction;
 import com.datamonk.blockchain.webapi.requests.APIRequest;
 import com.google.protobuf.ByteString;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.hyperledger.fabric.protos.peer.Query;
 import org.hyperledger.fabric.sdk.BlockInfo;
@@ -77,6 +79,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * Created by namakilam on 04/08/17.
  */
 public class ChainService {
+    private static final Logger LOGGER = LogManager.getLogger(ChainService.class);
+
     private static final NetworkConfig config = NetworkConfig.getConfig();
     private static final String TEST_ADMIN_NAME = "admin";
     private static final String TESTUSER_1_NAME = "user1";
@@ -267,7 +271,6 @@ public class ChainService {
 
         try {
             kycChannel.sendTransaction(successful, orderers).get(config.getTransactionWaitTime(), TimeUnit.SECONDS);
-
         } catch (Exception e) {
             throw new ChaincodeInstantiationFailedException(e);
         }
@@ -416,6 +419,18 @@ public class ChainService {
         newChannel.initialize();
 
         out("Finished initialization channel %s", name);
+        out("Registering Event Listener on Channel");
+
+        newChannel.registerBlockListener(blockEvent -> {
+            Long blockNumber = blockEvent.getBlockNumber();
+            String blockHash = blockEvent.getBlock().getHeader().getDataHash().toString();
+            out("New Block Mined On the Chain with blockNumber: %s, blockHash: %s", blockNumber.toString(), blockHash);
+            out("Received Event on Blockchain with chaincodeID: %s\nchaincode event name: %s\n transaction id: %s\n event payload: \"%s\"\n",
+                    blockEvent.getEvent().getChaincodeEvent().getChaincodeId(),
+                    blockEvent.getEvent().getChaincodeEvent().getEventName(),
+                    blockEvent.getEvent().getChaincodeEvent().getTxId(),
+                    blockEvent.getEvent().getChaincodeEvent().getPayload().toString());
+        });
 
         return newChannel;
 
