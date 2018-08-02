@@ -423,13 +423,8 @@ public class ChainService {
 
         newChannel.registerBlockListener(blockEvent -> {
             Long blockNumber = blockEvent.getBlockNumber();
-            String blockHash = blockEvent.getBlock().getHeader().getDataHash().toString();
+            String blockHash = blockEvent.getBlock().getHeader().getDataHash().toStringUtf8();
             out("New Block Mined On the Chain with blockNumber: %s, blockHash: %s", blockNumber.toString(), blockHash);
-            out("Received Event on Blockchain with chaincodeID: %s\nchaincode event name: %s\n transaction id: %s\n event payload: \"%s\"\n",
-                    blockEvent.getEvent().getChaincodeEvent().getChaincodeId(),
-                    blockEvent.getEvent().getChaincodeEvent().getEventName(),
-                    blockEvent.getEvent().getChaincodeEvent().getTxId(),
-                    blockEvent.getEvent().getChaincodeEvent().getPayload().toString());
         });
 
         return newChannel;
