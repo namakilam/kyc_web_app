@@ -255,7 +255,7 @@ func (t *ProjectChaincode) deleteProjectTask(stub shim.ChaincodeStubInterface, a
 
 	err = stub.DelState(project.Id)
 
-	if err != nil {
+	if err == nil {
 		if len(project.Parent) != 0 {
 			resp := t.removeTaskFromProject(stub, []string{project.Parent, projectId})
 			if resp.Status != 200 {
