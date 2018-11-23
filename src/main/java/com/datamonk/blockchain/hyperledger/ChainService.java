@@ -97,7 +97,7 @@ public class ChainService {
 
     private static final String PROJECT_CHAIN_CODE_NAME = "project_cc";
     private static final String PROJECT_CHAIN_CODE_PATH = "github.com/project_chaincode";
-    private static final String PROJECT_CHAIN_CODE_VERSION = "1.0.0";
+    private static final String PROJECT_CHAIN_CODE_VERSION = "1.0.1";
 
     private static final String CHANNEL_NAME = "mychannel";
 
@@ -251,7 +251,7 @@ public class ChainService {
                 .build();
 
         for (Query.ChaincodeInfo chainCodeInfo : instantiatedChaincodes) {
-            if (Objects.equals(chainCodeInfo.getName(), chaincodeID.getName()) && Objects.equals(chainCodeInfo.getPath(), chaincodeID.getPath()) && Objects.equals(chainCodeInfo.getVersion(), chaincodeID.getVersion())) {
+            if (Objects.equals(chainCodeInfo.getName(), projectChaincodeId.getName()) && Objects.equals(chainCodeInfo.getPath(), projectChaincodeId.getPath()) && Objects.equals(chainCodeInfo.getVersion(), projectChaincodeId.getVersion())) {
                 install = false;
             }
         }
@@ -260,7 +260,7 @@ public class ChainService {
             projectChaincodeID = installChaincode(projectChaincodeId);
             instantiateChaincode(projectChaincodeID);
         } else {
-            projectChaincodeID = chaincodeID;
+            projectChaincodeID = projectChaincodeId;
         }
     }
 
