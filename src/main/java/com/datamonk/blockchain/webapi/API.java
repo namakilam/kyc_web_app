@@ -63,6 +63,18 @@ public class API {
                     return approvePropertyTransfer(request);
                 case "getBlockByNumber":
                     return getBlockByNumber(request);
+                case "insertProject":
+                    return insertProjectIntoLedger(request);
+                case "updateProjectStatus":
+                    return updateProjectStatus(request);
+                case "deleteProject":
+                    return deleteProjectFromLedger(request);
+                case "getProjectById":
+                    return getProjectById(request);
+                case "approveProjectTaskUpdate":
+                    return approveProjectTaskUpdate(request);
+                case "declineProjectTaskUpdate":
+                    return declineProjectTaskUpdate(request);
             }
         }
         return APIResponse.Failure(new BadRequestException());
@@ -195,6 +207,66 @@ public class API {
     private APIResponse getBlockByNumber(APIRequest request) {
         try {
             Map<String, Object> resultMap = chainService.getBlockByNumber(request);
+            return APIResponse.Success(resultMap);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return APIResponse.Failure(e);
+        }
+    }
+
+    private APIResponse insertProjectIntoLedger(APIRequest request) {
+        try {
+            Map<String, Object> resultMap = chainService.insertProjectIntoLedger(request);
+            return APIResponse.Success(resultMap);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return APIResponse.Failure(e);
+        }
+    }
+
+    private APIResponse updateProjectStatus(APIRequest request) {
+        try {
+            Map<String, Object> resultMap = chainService.updateProjectStatus(request);
+            return APIResponse.Success(resultMap);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return APIResponse.Failure(e);
+        }
+    }
+
+    private APIResponse deleteProjectFromLedger(APIRequest request) {
+        try {
+            Map<String, Object> resultMap = chainService.deleteProjectFromLedger(request);
+            return APIResponse.Success(resultMap);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return APIResponse.Failure(e);
+        }
+    }
+
+    private APIResponse getProjectById(APIRequest request) {
+        try {
+            Map<String, Object> resultMap = chainService.getProjectInfoById(request);
+            return APIResponse.Success(resultMap);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return APIResponse.Failure(e);
+        }
+    }
+
+    private APIResponse approveProjectTaskUpdate(APIRequest request) {
+        try {
+            Map<String, Object> resultMap = chainService.approveProjectTaskUpdate(request);
+            return APIResponse.Success(resultMap);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return APIResponse.Failure(e);
+        }
+    }
+
+    private APIResponse declineProjectTaskUpdate(APIRequest request) {
+        try {
+            Map<String, Object> resultMap = chainService.declineProjectTaskUpdate(request);
             return APIResponse.Success(resultMap);
         } catch (Exception e) {
             e.printStackTrace();

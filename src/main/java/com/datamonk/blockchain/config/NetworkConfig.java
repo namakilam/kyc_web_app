@@ -8,7 +8,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -133,6 +137,8 @@ public class NetworkConfig {
                 sampleOrg.setCALocation(httpTLSify(sdkProperties.getProperty((INTEGRATIONTESTS_ORG + org.getKey() + ".ca_location"))));
 
                 if (runningFabricCATLS) {
+                    // /Users/namakilam/workspace/go/src/
+                    // /home/ubuntu/workspace/src/
                     String cert = "/home/ubuntu/workspace/src/github.com/hyperledger/fabric/examples/e2e_cli/crypto-config/peerOrganizations/DNAME/ca/ca.DNAME-cert.pem".replaceAll("DNAME", domainName);
                     File cf = new File(cert);
                     if (!cf.exists() || !cf.isFile()) {

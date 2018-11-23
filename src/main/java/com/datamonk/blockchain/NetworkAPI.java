@@ -37,6 +37,8 @@ public class NetworkAPI {
     private static final NetworkConfig testConfig = NetworkConfig.getConfig();
     private static final String TEST_ADMIN_NAME = "admin";
     private static final String TESTUSER_1_NAME = "user1";
+    // /Users/namakilam/workspace/go/src/
+    // /home/ubuntu/workspace/src/
     private static final String TEST_FIXTURES_PATH = "/home/ubuntu/workspace/src/github.com/hyperledger/fabric/examples/e2e_cli";
 
     private static final String CHAIN_CODE_NAME = "kyc_cc";
