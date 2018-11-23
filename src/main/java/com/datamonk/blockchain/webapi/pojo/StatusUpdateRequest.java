@@ -2,7 +2,6 @@ package com.datamonk.blockchain.webapi.pojo;
 
 import org.codehaus.jackson.annotate.JsonProperty;
 
-import java.io.IOException;
 import java.io.Serializable;
 
 public class StatusUpdateRequest implements Serializable {
@@ -14,6 +13,10 @@ public class StatusUpdateRequest implements Serializable {
 
     @JsonProperty("responder")
     private String responder;
+
+    public StatusUpdateRequest() {
+
+    }
 
     private StatusUpdateRequest(Builder builder) {
         setNewStatus(builder.newStatus);

@@ -33,6 +33,9 @@ public class ProjectAsset implements Serializable {
     @JsonProperty("status_update_request")
     private StatusUpdateRequest statusUpdateRequest;
 
+    public ProjectAsset() {
+
+    }
     private ProjectAsset(Builder builder) {
         setId(builder.id);
         setActivity(builder.activity);
