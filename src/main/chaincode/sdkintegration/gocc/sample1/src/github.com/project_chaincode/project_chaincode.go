@@ -238,7 +238,7 @@ func (t *ProjectChaincode) getProjectById(stub shim.ChaincodeStubInterface, args
 }
 
 func (t *ProjectChaincode) getProjectByOwner(stub shim.ChaincodeStubInterface, args[] string) pb.Response {
-	if len(args) != 2 {
+	if len(args) != 1 {
 		return shim.Error("Incorrect Number of Arguments.")
 	}
 
