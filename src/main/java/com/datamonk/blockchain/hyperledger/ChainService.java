@@ -97,7 +97,7 @@ public class ChainService {
 
     private static final String PROJECT_CHAIN_CODE_NAME = "project_cc";
     private static final String PROJECT_CHAIN_CODE_PATH = "github.com/project_chaincode";
-    private static final String PROJECT_CHAIN_CODE_VERSION = "1.1.3";
+    private static final String PROJECT_CHAIN_CODE_VERSION = "1.1.4";
 
     private static final String CHANNEL_NAME = "mychannel";
 
@@ -992,7 +992,7 @@ public class ChainService {
         TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
         transactionProposalRequest.setFcn("invoke");
         transactionProposalRequest.setArgs(new String[]{PROJECT_OWNER_TRANSFER_METHOD_KEY, projectId, requester, newOwner});
-        transactionProposalRequest.setChaincodeID(propertyChaincodeId);
+        transactionProposalRequest.setChaincodeID(projectChaincodeID);
         Map<String, byte[]> tm2 = new HashMap<>();
         tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
         tm2.put("method", "TransactionProposalRequest".getBytes(UTF_8));
@@ -1012,7 +1012,7 @@ public class ChainService {
         TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
         transactionProposalRequest.setFcn("invoke");
         transactionProposalRequest.setArgs(new String[]{PROJECT_OWNER_TRANSFER_APPROVAL_METHOD_KEY, projectId, requester});
-        transactionProposalRequest.setChaincodeID(propertyChaincodeId);
+        transactionProposalRequest.setChaincodeID(projectChaincodeID);
         Map<String, byte[]> tm2 = new HashMap<>();
         tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
         tm2.put("method", "TransactionProposalRequest".getBytes(UTF_8));
