@@ -1002,7 +1002,7 @@ public class ChainService {
     }
 
     public Map<String, Object> approveProjectOwnerTransferRequest(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, InconsistentProposalResponseException, NotEnoughEndorsersException, ExecutionException, UnsupportedEncodingException, InterruptedException, ProposalException {
-        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 3) {
+        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 2) {
             throw new InvalidNumberArgumentException(2, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
 
