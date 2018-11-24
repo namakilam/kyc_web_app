@@ -97,7 +97,7 @@ public class ChainService {
 
     private static final String PROJECT_CHAIN_CODE_NAME = "project_cc";
     private static final String PROJECT_CHAIN_CODE_PATH = "github.com/project_chaincode";
-    private static final String PROJECT_CHAIN_CODE_VERSION = "1.1.2";
+    private static final String PROJECT_CHAIN_CODE_VERSION = "1.1.3";
 
     private static final String CHANNEL_NAME = "mychannel";
 
