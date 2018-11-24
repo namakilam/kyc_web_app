@@ -97,7 +97,7 @@ public class ChainService {
 
     private static final String PROJECT_CHAIN_CODE_NAME = "project_cc";
     private static final String PROJECT_CHAIN_CODE_PATH = "github.com/project_chaincode";
-    private static final String PROJECT_CHAIN_CODE_VERSION = "1.1.1";
+    private static final String PROJECT_CHAIN_CODE_VERSION = "1.1.2";
 
     private static final String CHANNEL_NAME = "mychannel";
 
@@ -130,6 +130,9 @@ public class ChainService {
     private static final String DELETE_PROJECT_METHOD_KEY = "delete";
     private static final String APPROVE_PROJECT_STATUS_METHOD_KEY = "approveProjectTaskUpdate";
     private static final String DECLINE_PROJECT_STATUS_METHOD_KEY = "declineProjectTaskUpdate";
+    private static final String GET_PROJECT_OWNER_METHOD_KEY = "getProjectByOwner";
+    private static final String PROJECT_OWNER_TRANSFER_METHOD_KEY = "projectOwnerTransferRequest";
+    private static final String PROJECT_OWNER_TRANSFER_APPROVAL_METHOD_KEY = "approveProjectOwnerTransferRequest";
 
     private HFClient client;
     private Channel kycChannel;
@@ -726,17 +729,18 @@ public class ChainService {
     }
 
     public Map<String, Object> updateProjectStatus(APIRequest request) throws IOException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, InterruptedException, ExecutionException, InconsistentProposalResponseException, ProposalException, NotEnoughEndorsersException, InvalidNumberArgumentException, QueryResultFailureException {
-        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 1) {
-            throw new InvalidNumberArgumentException(1, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
+        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 2) {
+            throw new InvalidNumberArgumentException(2, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
 
         String projectId = request.getRequestParams().getCtorMsg().getArgs().get(0);
+        String requester = request.getRequestParams().getCtorMsg().getArgs().get(1);
 
         TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
         transactionProposalRequest.setChaincodeID(projectChaincodeID);
         transactionProposalRequest.setFcn("invoke");
         transactionProposalRequest.setProposalWaitTime(config.getProposalWaitTime());
-        transactionProposalRequest.setArgs(new String[]{UPDATE_PROJECT_STATUS_METHOD_KEY, projectId});
+        transactionProposalRequest.setArgs(new String[]{UPDATE_PROJECT_STATUS_METHOD_KEY, projectId, requester});
 
         Map<String, byte[]> tm2 = new HashMap<>();
         tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
@@ -879,6 +883,25 @@ public class ChainService {
         return processQueryRequest(queryByChaincodeRequest);
     }
 
+    public Map<String, Object> getProjectInfoByOwner(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, FailedQueryProposalException, ProposalException, QueryResultFailureException {
+        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 1) {
+            throw new InvalidNumberArgumentException(1, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
+        }
+
+        String ownerId = request.getRequestParams().getCtorMsg().getArgs().get(0);
+
+        QueryByChaincodeRequest queryByChaincodeRequest = client.newQueryProposalRequest();
+        queryByChaincodeRequest.setFcn("invoke");
+        queryByChaincodeRequest.setArgs(new String[]{GET_PROJECT_OWNER_METHOD_KEY, ownerId});
+        queryByChaincodeRequest.setChaincodeID(projectChaincodeID);
+        Map<String, byte[]> tm2 = new HashMap<>();
+        tm2.put("HyperLedgerFabric", "QueryByChaincodeRequest:JavaSDK".getBytes(UTF_8));
+        tm2.put("method", "QueryByChaincodeRequest".getBytes(UTF_8));
+        queryByChaincodeRequest.setTransientMap(tm2);
+
+        return processQueryRequest(queryByChaincodeRequest);
+    }
+
     public Map<String, Object> propertyTransferRequest(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, FailedQueryProposalException, ProposalException, QueryResultFailureException, InterruptedException, ExecutionException, InconsistentProposalResponseException, NotEnoughEndorsersException, IOException {
         if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() < 3) {
             throw new InvalidNumberArgumentException(3, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
@@ -955,6 +978,47 @@ public class ChainService {
         } else {
             throw new NotEnoughEndorsersException("Transfer Property Request Failed");
         }
+    }
+
+    public Map<String, Object> projectOwnerTransferRequest(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, InconsistentProposalResponseException, NotEnoughEndorsersException, ExecutionException, UnsupportedEncodingException, InterruptedException, ProposalException {
+        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 3) {
+            throw new InvalidNumberArgumentException(3, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
+        }
+
+        String projectId = request.getRequestParams().getCtorMsg().getArgs().get(0);
+        String requester = request.getRequestParams().getCtorMsg().getArgs().get(1);
+        String newOwner = request.getRequestParams().getCtorMsg().getArgs().get(2);
+
+        TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
+        transactionProposalRequest.setFcn("invoke");
+        transactionProposalRequest.setArgs(new String[]{PROJECT_OWNER_TRANSFER_METHOD_KEY, projectId, requester, newOwner});
+        transactionProposalRequest.setChaincodeID(propertyChaincodeId);
+        Map<String, byte[]> tm2 = new HashMap<>();
+        tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
+        tm2.put("method", "TransactionProposalRequest".getBytes(UTF_8));
+        transactionProposalRequest.setTransientMap(tm2);
+
+        return processTransactionRequest(transactionProposalRequest);
+    }
+
+    public Map<String, Object> approveProjectOwnerTransferRequest(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, InconsistentProposalResponseException, NotEnoughEndorsersException, ExecutionException, UnsupportedEncodingException, InterruptedException, ProposalException {
+        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 3) {
+            throw new InvalidNumberArgumentException(2, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
+        }
+
+        String projectId = request.getRequestParams().getCtorMsg().getArgs().get(0);
+        String requester = request.getRequestParams().getCtorMsg().getArgs().get(1);
+
+        TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
+        transactionProposalRequest.setFcn("invoke");
+        transactionProposalRequest.setArgs(new String[]{PROJECT_OWNER_TRANSFER_APPROVAL_METHOD_KEY, projectId, requester});
+        transactionProposalRequest.setChaincodeID(propertyChaincodeId);
+        Map<String, byte[]> tm2 = new HashMap<>();
+        tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
+        tm2.put("method", "TransactionProposalRequest".getBytes(UTF_8));
+        transactionProposalRequest.setTransientMap(tm2);
+
+        return processTransactionRequest(transactionProposalRequest);
     }
 
     public Map<String, Object> acceptPropertyTransferRequest(APIRequest request) throws InvalidNumberArgumentException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, FailedQueryProposalException, ProposalException, InterruptedException, ExecutionException, InconsistentProposalResponseException, NotEnoughEndorsersException, UnsupportedEncodingException {

@@ -75,6 +75,12 @@ public class API {
                     return approveProjectTaskUpdate(request);
                 case "declineProjectTaskUpdate":
                     return declineProjectTaskUpdate(request);
+                case "getProjectInfoByOwner":
+                    return getProjectByOwner(request);
+                case "projectOwnerTransferRequest":
+                    return projectOwnerTransferRequest(request);
+                case "approveProjectOwnerTransferRequest":
+                    return approveProjectOwnerTransferRequest(request);
             }
         }
         return APIResponse.Failure(new BadRequestException());
@@ -177,6 +183,36 @@ public class API {
     private APIResponse getPropertyByOwner(APIRequest request) {
         try {
             Map<String, Object> resultMap = chainService.getPropertyInfoByOwner(request);
+            return APIResponse.Success(resultMap);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return APIResponse.Failure(e);
+        }
+    }
+
+    private APIResponse getProjectByOwner(APIRequest request) {
+        try {
+            Map<String, Object> resultMap = chainService.getProjectInfoByOwner(request);
+            return APIResponse.Success(resultMap);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return APIResponse.Failure(e);
+        }
+    }
+
+    private APIResponse projectOwnerTransferRequest(APIRequest request) {
+        try {
+            Map<String, Object> resultMap = chainService.projectOwnerTransferRequest(request);
+            return APIResponse.Success(resultMap);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return APIResponse.Failure(e);
+        }
+    }
+
+    private APIResponse approveProjectOwnerTransferRequest(APIRequest request) {
+        try {
+            Map<String, Object> resultMap = chainService.approveProjectOwnerTransferRequest(request);
             return APIResponse.Success(resultMap);
         } catch (Exception e) {
             e.printStackTrace();

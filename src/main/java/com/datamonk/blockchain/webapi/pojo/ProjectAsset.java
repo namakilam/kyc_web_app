@@ -32,10 +32,16 @@ public class ProjectAsset implements Serializable {
     private String parent;
     @JsonProperty("status_update_request")
     private StatusUpdateRequest statusUpdateRequest;
+    @JsonProperty("owner")
+    private String owner;
+    @JsonProperty("previous_owner")
+    private String previousOwner;
+
 
     public ProjectAsset() {
 
     }
+
     private ProjectAsset(Builder builder) {
         setId(builder.id);
         setActivity(builder.activity);
@@ -48,14 +54,8 @@ public class ProjectAsset implements Serializable {
         setChildren(builder.children);
         setParent(builder.parent);
         setStatusUpdateRequest(builder.statusUpdateRequest);
-    }
-
-    public static ProjectAsset toAsset(String value) throws IOException {
-        return objectMapper.readValue(value, ProjectAsset.class);
-    }
-
-    public static String toJsonString(ProjectAsset asset) throws IOException {
-        return objectMapper.writeValueAsString(asset);
+        setOwner(builder.owner);
+        setPreviousOwner(builder.previousOwner);
     }
 
     public static Builder newBuilder() {
@@ -150,6 +150,46 @@ public class ProjectAsset implements Serializable {
         this.statusUpdateRequest = statusUpdateRequest;
     }
 
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
+
+    public String getPreviousOwner() {
+        return previousOwner;
+    }
+
+    public void setPreviousOwner(String previousOwner) {
+        this.previousOwner = previousOwner;
+    }
+
+    public static ProjectAsset toAsset(String value) throws IOException {
+        return objectMapper.readValue(value, ProjectAsset.class);
+    }
+
+    public static String toJsonString(ProjectAsset asset) throws IOException {
+        return objectMapper.writeValueAsString(asset);
+    }
+
+    @Override
+    public String toString() {
+        return "ProjectAsset{" +
+                "id='" + id + '\'' +
+                ", activity='" + activity + '\'' +
+                ", weightage=" + weightage +
+                ", subWeightage=" + subWeightage +
+                ", percentageMilestone=" + percentageMilestone +
+                ", milestone='" + milestone + '\'' +
+                ", milestoneValue=" + milestoneValue +
+                ", status=" + status +
+                ", children=" + children +
+                ", parent='" + parent + '\'' +
+                ", statusUpdateRequest=" + statusUpdateRequest +
+                '}';
+    }
 
     public static final class Builder {
         private String id;
@@ -163,6 +203,8 @@ public class ProjectAsset implements Serializable {
         private List<String> children;
         private String parent;
         private StatusUpdateRequest statusUpdateRequest;
+        private String owner;
+        private String previousOwner;
 
         private Builder() {
         }
@@ -222,25 +264,18 @@ public class ProjectAsset implements Serializable {
             return this;
         }
 
+        public Builder owner(String val) {
+            owner = val;
+            return this;
+        }
+
+        public Builder previousOwner(String val) {
+            previousOwner = val;
+            return this;
+        }
+
         public ProjectAsset build() {
             return new ProjectAsset(this);
         }
-    }
-
-    @Override
-    public String toString() {
-        return "ProjectAsset{" +
-                "id='" + id + '\'' +
-                ", activity='" + activity + '\'' +
-                ", weightage=" + weightage +
-                ", subWeightage=" + subWeightage +
-                ", percentageMilestone=" + percentageMilestone +
-                ", milestone='" + milestone + '\'' +
-                ", milestoneValue=" + milestoneValue +
-                ", status=" + status +
-                ", children=" + children +
-                ", parent='" + parent + '\'' +
-                ", statusUpdateRequest=" + statusUpdateRequest +
-                '}';
     }
 }

@@ -13,6 +13,11 @@ type ProjectStatusUpdateRequest struct {
 	Responder string `json:"responder"`
 }
 
+type OwnerUpdateRequest struct {
+	NewOwner string `json:"new_owner"`
+	Accepted bool `json:"accepted"`
+}
+
 type Project struct {
 	Id	string `json:"id"`
 	Activity string `json:"activity"`
@@ -25,6 +30,9 @@ type Project struct {
 	Children []string `json:"children"`
 	Parent string `json:"parent"`
 	StatusUpdateRequest	ProjectStatusUpdateRequest `json:"status_update_request"`
+	OwnerTransferRequest OwnerUpdateRequest `json:"owner_transfer_request"`
+	Owner string `json:"owner"`
+	PreviousOwner string `json:"previous_owner"`
 }
 
 type ProjectChaincode struct {
@@ -39,6 +47,9 @@ func (t *ProjectChaincode) validateProject(project Project) bool {
 		return false
 	}
 	if project.PerMilestone > 100.0 {
+		return false
+	}
+	if len(project.Owner) == 0 {
 		return false
 	}
 	return true
@@ -71,11 +82,48 @@ func (t *ProjectChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 		return t.declineProjectStatusUpdate(stub, args[1:])
 	case "getProjectById":
 		return t.getProjectById(stub, args[1:])
+	case "getProjectByOwner":
+		return t.getProjectByOwner(stub, args[1:])
+	case "projectOwnerTransferRequest":
+		return t.projectOwnerTransferRequest(stub, args[1:])
+	case "approveProjectOwnerTransferRequest":
+		return t.approveProjectOwnerTransferRequest(stub, args[1:])
 	default:
 		fmt.Println("Unknown Function Call")
 		return shim.Error("Unknown Function Call")
 	}
 }
+
+func (t *ProjectChaincode) readHistoryFromLedger(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) != 1 {
+		return shim.Error("Incorrect Number of Arguments. Required : 1")
+	}
+
+	key := args[0]
+	historyItr, err := stub.GetHistoryForKey(key)
+
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	var history []string
+
+	for historyItr.HasNext() {
+		alters, err := historyItr.Next()
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			history = append(history, string(alters.Value))
+		}
+	}
+
+	val, err := json.Marshal(history)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(val)
+}
+
 
 func (t *ProjectChaincode) removeTaskFromProject(stub shim.ChaincodeStubInterface, args[] string) pb.Response {
 	if len(args) != 2 {
@@ -189,6 +237,47 @@ func (t *ProjectChaincode) getProjectById(stub shim.ChaincodeStubInterface, args
 	return shim.Success(projectInfo)
 }
 
+func (t *ProjectChaincode) getProjectByOwner(stub shim.ChaincodeStubInterface, args[] string) pb.Response {
+	if len(args) != 2 {
+		return shim.Error("Incorrect Number of Arguments.")
+	}
+
+	indexName := "OwnerProjectKey"
+
+	queryItr, err := stub.GetStateByPartialCompositeKey(indexName, []string{args[0]})
+
+	if err != nil {
+		fmt.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+
+	var values []Project
+
+	for queryItr.HasNext() {
+		res, err := queryItr.Next()
+
+		if err != nil {
+			fmt.Errorf(err.Error())
+		} else {
+			var asset Project
+			err = json.Unmarshal(res.Value, &asset)
+			if err == nil {
+				values = append(values, asset)
+			}
+		}
+	}
+
+	val, err := json.Marshal(values)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	if len(val) == 0 {
+		return shim.Error(fmt.Sprintf("No Object With Prefix-Key : %s present In the Ledger.", args[0]))
+	}
+	return shim.Success(val)
+}
+
 func (t *ProjectChaincode) insertProjectTask(stub shim.ChaincodeStubInterface, args[] string) pb.Response {
 	if len(args) != 1 {
 		return shim.Error("Incorrect Number of Arguments.")
@@ -204,16 +293,25 @@ func (t *ProjectChaincode) insertProjectTask(stub shim.ChaincodeStubInterface, a
 	}
 
 	if t.validateProject(project) {
+		indexName := "OwnerProjectKey"
 		resp := t.getProjectById(stub, []string{project.Id})
 
 		if resp.Status == 200 {
 			return shim.Error("Asset Already Present")
 		}
 
+		key, err := stub.CreateCompositeKey(indexName, []string{project.Owner, project.Id})
+
 		value, err := json.Marshal(project)
 
 		if err != nil {
 			fmt.Errorf(err.Error())
+			return shim.Error(err.Error())
+		}
+
+		err = stub.PutState(key, value)
+
+		if err != nil {
 			return shim.Error(err.Error())
 		}
 
@@ -246,14 +344,18 @@ func (t *ProjectChaincode) deleteProjectTask(stub shim.ChaincodeStubInterface, a
 		return shim.Error("Project Not Present")
 	}
 
+	indexName := "OwnerProjectKey"
 	var project Project
 	err := json.Unmarshal(resp.Payload, &project)
+
+	key, err := stub.CreateCompositeKey(indexName, []string{project.Owner, project.Id})
 
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 
 	err = stub.DelState(project.Id)
+	err = stub.DelState(key)
 
 	if err == nil {
 		if len(project.Parent) != 0 {
@@ -263,6 +365,12 @@ func (t *ProjectChaincode) deleteProjectTask(stub shim.ChaincodeStubInterface, a
 				stub.PutState(project.Id, value)
 				return shim.Error("Error Deleting Project")
 			} else {
+				if len(project.Children) > 0 {
+					for _, childId := range project.Children {
+						t.deleteProjectTask(stub, []string{childId})
+					}
+				}
+
 				return shim.Success([]byte("Project Deleted Successfully"))
 			}
 		} else {
@@ -274,11 +382,12 @@ func (t *ProjectChaincode) deleteProjectTask(stub shim.ChaincodeStubInterface, a
 }
 
 func (t *ProjectChaincode) updateProjectStatus(stub shim.ChaincodeStubInterface, args[] string) pb.Response {
-	if len(args) != 1 {
+	if len(args) != 2 {
 		return shim.Error("Incorrect Number of Arguments.")
 	}
 
 	projectId := args[0]
+	requester := args[1]
 
 	resp := t.getProjectById(stub, []string{projectId})
 
@@ -294,6 +403,10 @@ func (t *ProjectChaincode) updateProjectStatus(stub shim.ChaincodeStubInterface,
 	var project Project
 	err := json.Unmarshal(resp.Payload, &project)
 
+	if requester != project.Owner {
+		return shim.Error("Requesting Party is not the Owner of the Task")
+	}
+
 	if err != nil {
 		fmt.Errorf(err.Error())
 		return shim.Error(err.Error())
@@ -302,6 +415,35 @@ func (t *ProjectChaincode) updateProjectStatus(stub shim.ChaincodeStubInterface,
 	project.StatusUpdateRequest = statusUpdateRequest
 
 	value, err := json.Marshal(project)
+
+	if err != nil {
+		fmt.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+
+	indexName := "OwnerProjectKey"
+	key, err := stub.CreateCompositeKey(indexName, []string{project.Owner, project.Id})
+
+	if err != nil {
+		fmt.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+
+	err = stub.PutState(key, value)
+
+	if err != nil {
+		fmt.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+
+	key, err = stub.CreateCompositeKey(indexName, []string{project.PreviousOwner, project.Id})
+
+	if err != nil {
+		fmt.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+
+	err = stub.PutState(key, value)
 
 	if err != nil {
 		fmt.Errorf(err.Error())
@@ -340,6 +482,10 @@ func (t *ProjectChaincode) approveProjectStatusUpdate(stub shim.ChaincodeStubInt
 		return shim.Error(err.Error())
 	}
 
+	if project.PreviousOwner != responder {
+		return shim.Error("Invalid Authorization Personnel")
+	}
+
 	if &(project.StatusUpdateRequest) == nil {
 		fmt.Errorf("No Status Update Request Found")
 		return shim.Error("No Status Update Request Found")
@@ -355,7 +501,36 @@ func (t *ProjectChaincode) approveProjectStatusUpdate(stub shim.ChaincodeStubInt
 			return shim.Error(err.Error())
 		}
 
-		stub.PutState(project.Id, value)
+		indexName := "OwnerProjectKey"
+		key, err := stub.CreateCompositeKey(indexName, []string{project.Owner, project.Id})
+
+		if err != nil {
+			fmt.Errorf(err.Error())
+			return shim.Error(err.Error())
+		}
+
+		err = stub.PutState(key, value)
+
+		if err != nil {
+			fmt.Errorf(err.Error())
+			return shim.Error(err.Error())
+		}
+
+		key, err = stub.CreateCompositeKey(indexName, []string{project.PreviousOwner, project.Id})
+
+		err = stub.PutState(key, value)
+
+		if err != nil {
+			fmt.Errorf(err.Error())
+			return shim.Error(err.Error())
+		}
+
+		err = stub.PutState(project.Id, value)
+
+		if err != nil {
+			fmt.Errorf(err.Error())
+			return shim.Error(err.Error())
+		}
 
 		return shim.Success([]byte("Status Update Approved Successfully"))
 	}
@@ -383,6 +558,10 @@ func (t *ProjectChaincode) declineProjectStatusUpdate(stub shim.ChaincodeStubInt
 		return shim.Error(err.Error())
 	}
 
+	if project.PreviousOwner != responder {
+		return shim.Error("Invalid Authorization Personnel")
+	}
+
 	if &(project.StatusUpdateRequest) == nil {
 		fmt.Errorf("No Status Update Request Found")
 		return shim.Error("No Status Update Request Found")
@@ -397,10 +576,182 @@ func (t *ProjectChaincode) declineProjectStatusUpdate(stub shim.ChaincodeStubInt
 			return shim.Error(err.Error())
 		}
 
+		indexName := "OwnerProjectKey"
+		key, err := stub.CreateCompositeKey(indexName, []string{project.Owner, project.Id})
+
+		if err != nil {
+			fmt.Errorf(err.Error())
+			return shim.Error(err.Error())
+		}
+
+		err = stub.PutState(key, value)
+
+		if err != nil {
+			fmt.Errorf(err.Error())
+			return shim.Error(err.Error())
+		}
+
+		key, err = stub.CreateCompositeKey(indexName, []string{project.PreviousOwner, project.Id})
+
+		err = stub.PutState(key, value)
+
+		if err != nil {
+			fmt.Errorf(err.Error())
+			return shim.Error(err.Error())
+		}
+
 		stub.PutState(project.Id, value)
+
+		if err != nil {
+			fmt.Errorf(err.Error())
+			return shim.Error(err.Error())
+		}
 
 		return shim.Success([]byte("Status Update Declined Successfully"))
 	}
+}
+func (t *ProjectChaincode) projectOwnerTransferRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) != 3 {
+		return shim.Error("Incorrect Number of Arguments.")
+	}
+
+	projectId := args[0]
+	requester := args[1]
+	newOwner := args[2]
+
+	response := t.getProjectById(stub, []string{"getById", projectId})
+
+	if response.Status != 200 {
+		return shim.Error("Property Doesn't Exist")
+	}
+
+	var asset Project
+	err := json.Unmarshal(response.Payload, &asset)
+
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	if asset.Owner != requester {
+		return shim.Error("Not Authorized to Transfer Ownership")
+	}
+
+	var ownerUpdateReqesut OwnerUpdateRequest
+	ownerUpdateReqesut.Accepted = false
+	ownerUpdateReqesut.NewOwner = newOwner
+
+	asset.OwnerTransferRequest = ownerUpdateReqesut
+
+	indexName := "OwnerProjectKey"
+	key, err := stub.CreateCompositeKey(indexName, []string{asset.Owner, projectId})
+
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	value, err := json.Marshal(asset)
+
+	if err != nil {
+		fmt.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+
+	err = stub.PutState(key, value)
+
+	if err != nil {
+		fmt.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+
+	err = stub.PutState(projectId, value)
+
+	if err != nil {
+		fmt.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+	return shim.Success([]byte("Transfer Request Successfully Created"))
+}
+
+
+func (t *ProjectChaincode) approveProjectOwnerTransferRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) != 2 {
+		return shim.Error("Incorrect Number of Arguments.")
+	}
+
+	projectId := args[0]
+	requester := args[1]
+
+	response := t.getProjectById(stub, []string{"getById", projectId})
+
+	if response.Status != 200 {
+		return shim.Error("Property Doesn't Exist")
+	}
+
+	var asset Project
+	err := json.Unmarshal(response.Payload, &asset)
+
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	if &(asset.OwnerTransferRequest) == nil {
+		return shim.Error("No Owner Transfer Request Present")
+	}
+
+	if asset.OwnerTransferRequest.NewOwner != requester {
+		return shim.Error("Not Authorized to Accept Request")
+	}
+
+	asset.PreviousOwner = asset.Owner
+	asset.Owner = asset.OwnerTransferRequest.NewOwner
+
+	asset.OwnerTransferRequest.NewOwner = ""
+	asset.OwnerTransferRequest.Accepted = false
+
+	indexName := "OwnerProjectKey"
+	key, err := stub.CreateCompositeKey(indexName, []string{asset.PreviousOwner, projectId})
+
+	if err != nil {
+		fmt.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+
+	value, err := json.Marshal(asset)
+
+	if err != nil {
+		fmt.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+
+	err = stub.PutState(key, value)
+
+	if err != nil {
+		fmt.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+
+	key, err = stub.CreateCompositeKey(indexName, []string{asset.Owner, projectId})
+
+	if err != nil {
+		fmt.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+
+	err = stub.PutState(key, value)
+
+	if err != nil {
+		fmt.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+
+	err = stub.PutState(asset.Id, value)
+
+	if err != nil {
+		fmt.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success([]byte("Ownership Transfered Successfully"))
 }
 
 func main() {
