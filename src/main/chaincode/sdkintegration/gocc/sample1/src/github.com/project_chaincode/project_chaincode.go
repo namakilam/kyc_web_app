@@ -619,7 +619,7 @@ func (t *ProjectChaincode) projectOwnerTransferRequest(stub shim.ChaincodeStubIn
 	requester := args[1]
 	newOwner := args[2]
 
-	response := t.getProjectById(stub, []string{"getById", projectId})
+	response := t.getProjectById(stub, []string{projectId})
 
 	if response.Status != 200 {
 		return shim.Error("Property Doesn't Exist")
@@ -681,7 +681,7 @@ func (t *ProjectChaincode) approveProjectOwnerTransferRequest(stub shim.Chaincod
 	projectId := args[0]
 	requester := args[1]
 
-	response := t.getProjectById(stub, []string{"getById", projectId})
+	response := t.getProjectById(stub, []string{projectId})
 
 	if response.Status != 200 {
 		return shim.Error("Property Doesn't Exist")
