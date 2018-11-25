@@ -505,12 +505,15 @@ func (t *ProjectChaincode) approveProjectStatusUpdate(stub shim.ChaincodeStubInt
 		for _, ms := range project.Milestones {
 			if ms.Id == milestoneId {
 				milestone = ms
+				ms.Status = statusUpdateRequest.NewStatus
 			}
 		}
 
 		for _, updateRequest := range project.StatusUpdateRequest {
 			if updateRequest.MilestoneId == milestoneId {
 				statusUpdateRequest = updateRequest
+				updateRequest.Responder = responder
+				updateRequest.ApprovalStatus = "Approved"
 				break
 			}
 		}
@@ -518,10 +521,6 @@ func (t *ProjectChaincode) approveProjectStatusUpdate(stub shim.ChaincodeStubInt
 		if (&statusUpdateRequest == nil) || (&milestone == nil) {
 			return shim.Error("Status Update Request Not Found")
 		}
-
-		statusUpdateRequest.Responder = responder
-		statusUpdateRequest.ApprovalStatus = "Approved"
-		milestone.Status = statusUpdateRequest.NewStatus
 
 		value , err := json.Marshal(project)
 
