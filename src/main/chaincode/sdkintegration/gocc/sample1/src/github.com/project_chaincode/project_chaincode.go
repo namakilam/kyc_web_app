@@ -7,7 +7,8 @@ import (
 	"encoding/json"
 )
 
-type ProjectStatusUpdateRequest struct {
+type MilestoneStatusUpdateRequest struct {
+	MilestoneId string `json:"milestone_id"`
 	NewStatus bool `json:"new_status"`
 	ApprovalStatus string `json:"approval_status"`
 	Responder string `json:"responder"`
@@ -18,18 +19,23 @@ type OwnerUpdateRequest struct {
 	Accepted bool `json:"accepted"`
 }
 
+type Milestone struct {
+	Id string `json:"id"`
+	value string `json:"value"`
+	PerMilestone float32 `json:"per_milestone"`
+	Status bool `json:"status"`
+}
+
 type Project struct {
 	Id	string `json:"id"`
 	Activity string `json:"activity"`
 	Weightage float32 `json:"weightage"`
 	SubWeightage float32 `json:"sub_weightage"`
-	PerMilestone float32 `json:"per_milestone"`
-	Milestone string `json:"milestone"`
+	Milestones []Milestone `json:"milestones"`
 	MilestoneValue int `json:"milestone_value"`
-	Status bool `json:"status"`
 	Children []string `json:"children"`
 	Parent string `json:"parent"`
-	StatusUpdateRequest	ProjectStatusUpdateRequest `json:"status_update_request"`
+	StatusUpdateRequest	[]MilestoneStatusUpdateRequest `json:"status_update_request"`
 	OwnerTransferRequest OwnerUpdateRequest `json:"owner_transfer_request"`
 	Owner string `json:"owner"`
 	PreviousOwner string `json:"previous_owner"`
@@ -44,9 +50,6 @@ func (t *ProjectChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 
 func (t *ProjectChaincode) validateProject(project Project) bool {
 	if len(project.Id) == 0 {
-		return false
-	}
-	if project.PerMilestone > 100.0 {
 		return false
 	}
 	if len(project.Owner) == 0 {
@@ -382,12 +385,13 @@ func (t *ProjectChaincode) deleteProjectTask(stub shim.ChaincodeStubInterface, a
 }
 
 func (t *ProjectChaincode) updateProjectStatus(stub shim.ChaincodeStubInterface, args[] string) pb.Response {
-	if len(args) != 2 {
+	if len(args) != 3 {
 		return shim.Error("Incorrect Number of Arguments.")
 	}
 
 	projectId := args[0]
-	requester := args[1]
+	milestoneId := args[1]
+	requester := args[2]
 
 	resp := t.getProjectById(stub, []string{projectId})
 
@@ -395,7 +399,8 @@ func (t *ProjectChaincode) updateProjectStatus(stub shim.ChaincodeStubInterface,
 		return shim.Error("Project Does not exist")
 	}
 
-	var statusUpdateRequest ProjectStatusUpdateRequest
+	var statusUpdateRequest MilestoneStatusUpdateRequest
+	statusUpdateRequest.MilestoneId = milestoneId
 	statusUpdateRequest.ApprovalStatus = "Waiting"
 	statusUpdateRequest.NewStatus = true
 	statusUpdateRequest.Responder = ""
@@ -411,8 +416,11 @@ func (t *ProjectChaincode) updateProjectStatus(stub shim.ChaincodeStubInterface,
 		fmt.Errorf(err.Error())
 		return shim.Error(err.Error())
 	}
+	if &(project.StatusUpdateRequest) == nil {
+		project.StatusUpdateRequest = make([]MilestoneStatusUpdateRequest, 0)
+	}
 
-	project.StatusUpdateRequest = statusUpdateRequest
+	project.StatusUpdateRequest = append(project.StatusUpdateRequest, statusUpdateRequest)
 
 	value, err := json.Marshal(project)
 
@@ -461,12 +469,13 @@ func (t *ProjectChaincode) updateProjectStatus(stub shim.ChaincodeStubInterface,
 }
 
 func (t *ProjectChaincode) approveProjectStatusUpdate(stub shim.ChaincodeStubInterface, args[] string) pb.Response {
-	if len(args) != 2 {
+	if len(args) != 3 {
 		return shim.Error("Incorrect Number of Arguments.")
 	}
 
 	projectId := args[0]
-	responder := args[1]
+	milestoneId := args[1]
+	responder := args[2]
 
 	resp := t.getProjectById(stub, []string{projectId})
 
@@ -490,9 +499,29 @@ func (t *ProjectChaincode) approveProjectStatusUpdate(stub shim.ChaincodeStubInt
 		fmt.Errorf("No Status Update Request Found")
 		return shim.Error("No Status Update Request Found")
 	} else {
-		project.StatusUpdateRequest.Responder = responder
-		project.StatusUpdateRequest.ApprovalStatus = "Approved"
-		project.Status = project.StatusUpdateRequest.NewStatus
+		var statusUpdateRequest MilestoneStatusUpdateRequest
+		var milestone Milestone
+
+		for _, ms := range project.Milestones {
+			if ms.Id == milestoneId {
+				milestone = ms
+			}
+		}
+
+		for _, updateRequest := range project.StatusUpdateRequest {
+			if updateRequest.MilestoneId == milestoneId {
+				statusUpdateRequest = updateRequest
+				break
+			}
+		}
+
+		if (&statusUpdateRequest == nil) || (&milestone == nil) {
+			return shim.Error("Status Update Request Not Found")
+		}
+
+		statusUpdateRequest.Responder = responder
+		statusUpdateRequest.ApprovalStatus = "Approved"
+		milestone.Status = statusUpdateRequest.NewStatus
 
 		value , err := json.Marshal(project)
 
@@ -537,12 +566,13 @@ func (t *ProjectChaincode) approveProjectStatusUpdate(stub shim.ChaincodeStubInt
 }
 
 func (t *ProjectChaincode) declineProjectStatusUpdate(stub shim.ChaincodeStubInterface, args[] string) pb.Response {
-	if len(args) != 2 {
+	if len(args) != 3 {
 		return shim.Error("Incorrect Number of Arguments.")
 	}
 
 	projectId := args[0]
-	responder := args[1]
+	milestoneId := args[1]
+	responder := args[2]
 
 	resp := t.getProjectById(stub, []string{projectId})
 
@@ -566,8 +596,21 @@ func (t *ProjectChaincode) declineProjectStatusUpdate(stub shim.ChaincodeStubInt
 		fmt.Errorf("No Status Update Request Found")
 		return shim.Error("No Status Update Request Found")
 	} else {
-		project.StatusUpdateRequest.Responder = responder
-		project.StatusUpdateRequest.ApprovalStatus = "Declined"
+		var statusUpdateRequest MilestoneStatusUpdateRequest
+
+		for _, updateRequest := range project.StatusUpdateRequest {
+			if updateRequest.MilestoneId == milestoneId {
+				statusUpdateRequest = updateRequest
+				break
+			}
+		}
+
+		if &statusUpdateRequest == nil {
+			return shim.Error("Status Update Request Not Found")
+		}
+
+		statusUpdateRequest.Responder = responder
+		statusUpdateRequest.ApprovalStatus = "Declined"
 
 		value , err := json.Marshal(project)
 
