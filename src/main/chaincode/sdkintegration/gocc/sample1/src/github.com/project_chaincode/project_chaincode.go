@@ -31,7 +31,7 @@ type Project struct {
 	Activity string `json:"activity"`
 	Weightage float32 `json:"weightage"`
 	SubWeightage float32 `json:"sub_weightage"`
-	Milestones []Milestone `json:"milestones"`
+	Milestones []Milestone `json:"milestone"`
 	MilestoneValue int `json:"milestone_value"`
 	Children []string `json:"children"`
 	Parent string `json:"parent"`

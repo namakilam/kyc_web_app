@@ -18,20 +18,16 @@ public class ProjectAsset implements Serializable {
     private Float weightage;
     @JsonProperty("sub_weightage")
     private Float subWeightage;
-    @JsonProperty("per_milestone")
-    private Float percentageMilestone;
     @JsonProperty("milestone")
-    private String milestone;
+    private List<Milestone> milestone;
     @JsonProperty("milestone_value")
     private Integer milestoneValue;
-    @JsonProperty("status")
-    private Boolean status;
     @JsonProperty("children")
     private List<String> children;
     @JsonProperty("parent")
     private String parent;
     @JsonProperty("status_update_request")
-    private StatusUpdateRequest statusUpdateRequest;
+    private List<StatusUpdateRequest> statusUpdateRequest;
     @JsonProperty("owner")
     private String owner;
     @JsonProperty("previous_owner")
@@ -47,10 +43,8 @@ public class ProjectAsset implements Serializable {
         setActivity(builder.activity);
         setWeightage(builder.weightage);
         setSubWeightage(builder.subWeightage);
-        setPercentageMilestone(builder.percentageMilestone);
         setMilestone(builder.milestone);
         setMilestoneValue(builder.milestoneValue);
-        setStatus(builder.status);
         setChildren(builder.children);
         setParent(builder.parent);
         setStatusUpdateRequest(builder.statusUpdateRequest);
@@ -94,19 +88,11 @@ public class ProjectAsset implements Serializable {
         this.subWeightage = subWeightage;
     }
 
-    public Float getPercentageMilestone() {
-        return percentageMilestone;
-    }
-
-    public void setPercentageMilestone(Float percentageMilestone) {
-        this.percentageMilestone = percentageMilestone;
-    }
-
-    public String getMilestone() {
+    public List<Milestone> getMilestone() {
         return milestone;
     }
 
-    public void setMilestone(String milestone) {
+    public void setMilestone(List<Milestone> milestone) {
         this.milestone = milestone;
     }
 
@@ -116,14 +102,6 @@ public class ProjectAsset implements Serializable {
 
     public void setMilestoneValue(Integer milestoneValue) {
         this.milestoneValue = milestoneValue;
-    }
-
-    public Boolean getStatus() {
-        return status;
-    }
-
-    public void setStatus(Boolean status) {
-        this.status = status;
     }
 
     public List<String> getChildren() {
@@ -142,11 +120,11 @@ public class ProjectAsset implements Serializable {
         this.parent = parent;
     }
 
-    public StatusUpdateRequest getStatusUpdateRequest() {
+    public List<StatusUpdateRequest> getStatusUpdateRequest() {
         return statusUpdateRequest;
     }
 
-    public void setStatusUpdateRequest(StatusUpdateRequest statusUpdateRequest) {
+    public void setStatusUpdateRequest(List<StatusUpdateRequest> statusUpdateRequest) {
         this.statusUpdateRequest = statusUpdateRequest;
     }
 
@@ -174,35 +152,16 @@ public class ProjectAsset implements Serializable {
         return objectMapper.writeValueAsString(asset);
     }
 
-    @Override
-    public String toString() {
-        return "ProjectAsset{" +
-                "id='" + id + '\'' +
-                ", activity='" + activity + '\'' +
-                ", weightage=" + weightage +
-                ", subWeightage=" + subWeightage +
-                ", percentageMilestone=" + percentageMilestone +
-                ", milestone='" + milestone + '\'' +
-                ", milestoneValue=" + milestoneValue +
-                ", status=" + status +
-                ", children=" + children +
-                ", parent='" + parent + '\'' +
-                ", statusUpdateRequest=" + statusUpdateRequest +
-                '}';
-    }
-
     public static final class Builder {
         private String id;
         private String activity;
         private Float weightage;
         private Float subWeightage;
-        private Float percentageMilestone;
-        private String milestone;
+        private List<Milestone> milestone;
         private Integer milestoneValue;
-        private Boolean status;
         private List<String> children;
         private String parent;
-        private StatusUpdateRequest statusUpdateRequest;
+        private List<StatusUpdateRequest> statusUpdateRequest;
         private String owner;
         private String previousOwner;
 
@@ -229,23 +188,13 @@ public class ProjectAsset implements Serializable {
             return this;
         }
 
-        public Builder percentageMilestone(Float val) {
-            percentageMilestone = val;
-            return this;
-        }
-
-        public Builder milestone(String val) {
+        public Builder milestone(List<Milestone> val) {
             milestone = val;
             return this;
         }
 
         public Builder milestoneValue(Integer val) {
             milestoneValue = val;
-            return this;
-        }
-
-        public Builder status(Boolean val) {
-            status = val;
             return this;
         }
 
@@ -259,7 +208,7 @@ public class ProjectAsset implements Serializable {
             return this;
         }
 
-        public Builder statusUpdateRequest(StatusUpdateRequest val) {
+        public Builder statusUpdateRequest(List<StatusUpdateRequest> val) {
             statusUpdateRequest = val;
             return this;
         }
@@ -277,5 +226,22 @@ public class ProjectAsset implements Serializable {
         public ProjectAsset build() {
             return new ProjectAsset(this);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "ProjectAsset{" +
+                "id='" + id + '\'' +
+                ", activity='" + activity + '\'' +
+                ", weightage=" + weightage +
+                ", subWeightage=" + subWeightage +
+                ", milestone=" + milestone +
+                ", milestoneValue=" + milestoneValue +
+                ", children=" + children +
+                ", parent='" + parent + '\'' +
+                ", statusUpdateRequest=" + statusUpdateRequest +
+                ", owner='" + owner + '\'' +
+                ", previousOwner='" + previousOwner + '\'' +
+                '}';
     }
 }
