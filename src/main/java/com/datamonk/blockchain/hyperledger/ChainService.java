@@ -741,7 +741,7 @@ public class ChainService {
         transactionProposalRequest.setChaincodeID(projectChaincodeID);
         transactionProposalRequest.setFcn("invoke");
         transactionProposalRequest.setProposalWaitTime(config.getProposalWaitTime());
-        transactionProposalRequest.setArgs(new String[]{UPDATE_PROJECT_STATUS_METHOD_KEY, projectId, requester});
+        transactionProposalRequest.setArgs(new String[]{UPDATE_PROJECT_STATUS_METHOD_KEY, projectId, milestoneId,requester});
 
         Map<String, byte[]> tm2 = new HashMap<>();
         tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
@@ -765,7 +765,7 @@ public class ChainService {
         transactionProposalRequest.setChaincodeID(projectChaincodeID);
         transactionProposalRequest.setFcn("invoke");
         transactionProposalRequest.setProposalWaitTime(config.getProposalWaitTime());
-        transactionProposalRequest.setArgs(new String[]{APPROVE_PROJECT_STATUS_METHOD_KEY, projectId, responder});
+        transactionProposalRequest.setArgs(new String[]{APPROVE_PROJECT_STATUS_METHOD_KEY, projectId, milestoneId,responder});
 
         Map<String, byte[]> tm2 = new HashMap<>();
         tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
@@ -789,7 +789,7 @@ public class ChainService {
         transactionProposalRequest.setChaincodeID(projectChaincodeID);
         transactionProposalRequest.setFcn("invoke");
         transactionProposalRequest.setProposalWaitTime(config.getProposalWaitTime());
-        transactionProposalRequest.setArgs(new String[]{DECLINE_PROJECT_STATUS_METHOD_KEY, projectId, responder});
+        transactionProposalRequest.setArgs(new String[]{DECLINE_PROJECT_STATUS_METHOD_KEY, projectId, milestoneId,responder});
 
         Map<String, byte[]> tm2 = new HashMap<>();
         tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8));
