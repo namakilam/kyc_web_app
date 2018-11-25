@@ -663,6 +663,20 @@ func (t *ProjectChaincode) projectOwnerTransferRequest(stub shim.ChaincodeStubIn
 		return shim.Error(err.Error())
 	}
 
+	key, err = stub.CreateCompositeKey(indexName, []string{newOwner, projectId})
+
+	if err != nil {
+		fmt.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+
+	err = stub.PutState(key, value)
+
+	if err != nil {
+		fmt.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+
 	err = stub.PutState(projectId, value)
 
 	if err != nil {
