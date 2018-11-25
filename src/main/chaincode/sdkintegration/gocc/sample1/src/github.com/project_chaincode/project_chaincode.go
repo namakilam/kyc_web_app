@@ -502,18 +502,18 @@ func (t *ProjectChaincode) approveProjectStatusUpdate(stub shim.ChaincodeStubInt
 		var statusUpdateRequest MilestoneStatusUpdateRequest
 		var milestone Milestone
 
-		for _, ms := range project.Milestones {
+		for index, ms := range project.Milestones {
 			if ms.Id == milestoneId {
 				milestone = ms
-				ms.Status = statusUpdateRequest.NewStatus
+				project.Milestones[index].Status = statusUpdateRequest.NewStatus
 			}
 		}
 
-		for _, updateRequest := range project.StatusUpdateRequest {
+		for index, updateRequest := range project.StatusUpdateRequest {
 			if updateRequest.MilestoneId == milestoneId {
 				statusUpdateRequest = updateRequest
-				updateRequest.Responder = responder
-				updateRequest.ApprovalStatus = "Approved"
+				project.StatusUpdateRequest[index].Responder = responder
+				project.StatusUpdateRequest[index].ApprovalStatus = "Approved"
 				break
 			}
 		}
