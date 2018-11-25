@@ -729,12 +729,13 @@ public class ChainService {
     }
 
     public Map<String, Object> updateProjectStatus(APIRequest request) throws IOException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, InterruptedException, ExecutionException, InconsistentProposalResponseException, ProposalException, NotEnoughEndorsersException, InvalidNumberArgumentException, QueryResultFailureException {
-        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 2) {
-            throw new InvalidNumberArgumentException(2, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
+        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 3) {
+            throw new InvalidNumberArgumentException(3, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
 
         String projectId = request.getRequestParams().getCtorMsg().getArgs().get(0);
-        String requester = request.getRequestParams().getCtorMsg().getArgs().get(1);
+        String milestoneId = request.getRequestParams().getCtorMsg().getArgs().get(1);
+        String requester = request.getRequestParams().getCtorMsg().getArgs().get(2);
 
         TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
         transactionProposalRequest.setChaincodeID(projectChaincodeID);
@@ -752,12 +753,13 @@ public class ChainService {
     }
 
     public Map<String, Object> approveProjectTaskUpdate(APIRequest request) throws IOException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, InterruptedException, ExecutionException, InconsistentProposalResponseException, ProposalException, NotEnoughEndorsersException, InvalidNumberArgumentException, QueryResultFailureException {
-        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 2) {
-            throw new InvalidNumberArgumentException(2, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
+        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 3) {
+            throw new InvalidNumberArgumentException(3, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
 
         String projectId = request.getRequestParams().getCtorMsg().getArgs().get(0);
-        String responder = request.getRequestParams().getCtorMsg().getArgs().get(1);
+        String milestoneId = request.getRequestParams().getCtorMsg().getArgs().get(1);
+        String responder = request.getRequestParams().getCtorMsg().getArgs().get(2);
 
         TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
         transactionProposalRequest.setChaincodeID(projectChaincodeID);
@@ -775,12 +777,13 @@ public class ChainService {
     }
 
     public Map<String, Object> declineProjectTaskUpdate(APIRequest request) throws IOException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, InterruptedException, ExecutionException, InconsistentProposalResponseException, ProposalException, NotEnoughEndorsersException, InvalidNumberArgumentException, QueryResultFailureException {
-        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 2) {
-            throw new InvalidNumberArgumentException(2, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
+        if (request.getRequestParams().getCtorMsg().getArgs() == null || request.getRequestParams().getCtorMsg().getArgs().size() != 3) {
+            throw new InvalidNumberArgumentException(3, request.getRequestParams().getCtorMsg().getArgs() == null ? 0 : request.getRequestParams().getCtorMsg().getArgs().size());
         }
 
         String projectId = request.getRequestParams().getCtorMsg().getArgs().get(0);
-        String responder = request.getRequestParams().getCtorMsg().getArgs().get(1);
+        String milestoneId = request.getRequestParams().getCtorMsg().getArgs().get(1);
+        String responder = request.getRequestParams().getCtorMsg().getArgs().get(2);
 
         TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
         transactionProposalRequest.setChaincodeID(projectChaincodeID);
