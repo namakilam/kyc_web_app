@@ -21,7 +21,7 @@ type OwnerUpdateRequest struct {
 
 type Milestone struct {
 	Id string `json:"id"`
-	value string `json:"value"`
+	MilestoneValue string `json:"milestone_value"`
 	PerMilestone float32 `json:"per_milestone"`
 	Status bool `json:"status"`
 }

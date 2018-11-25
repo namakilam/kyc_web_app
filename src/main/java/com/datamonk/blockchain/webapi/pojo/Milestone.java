@@ -7,8 +7,8 @@ import java.io.Serializable;
 public class Milestone implements Serializable {
     @JsonProperty("id")
     private String id;
-    @JsonProperty("value")
-    private String value;
+    @JsonProperty("milestone_value")
+    private String milestoneValue;
     @JsonProperty("per_milestone")
     private Float perMilestone;
     @JsonProperty("status")
@@ -20,7 +20,7 @@ public class Milestone implements Serializable {
 
     private Milestone(Builder builder) {
         setId(builder.id);
-        setValue(builder.value);
+        setMilestoneValue(builder.value);
         setPerMilestone(builder.perMilestone);
         setStatus(builder.status);
     }
@@ -37,12 +37,12 @@ public class Milestone implements Serializable {
         this.id = id;
     }
 
-    public String getValue() {
-        return value;
+    public String getMilestoneValue() {
+        return milestoneValue;
     }
 
-    public void setValue(String value) {
-        this.value = value;
+    public void setMilestoneValue(String milestoneValue) {
+        this.milestoneValue = milestoneValue;
     }
 
     public Float getPerMilestone() {
